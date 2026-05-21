@@ -17,16 +17,6 @@ spring:
       max-file-size: 100MB
       max-request-size: 100MB
 
-  cloud:
-    aws:
-      credentials:
-        access-key: ${AWS_ACCESS_KEY}
-        secret-key: ${AWS_SECRET_KEY}
-      region:
-        static: ${AWS_REGION}
-      s3:
-        bucket: ${AWS_BUCKET}
-
   cache:
     cache-names: presigned
     caffeine:
@@ -34,6 +24,12 @@ spring:
 
   jackson:
         time-zone: Asia/Seoul
+
+# 로컬 파일 저장소 설정
+file:
+  storage:
+    location: ${FILE_STORAGE_LOCATION:/home/awdesign/uploads}
+    base-url: ${FILE_STORAGE_BASE_URL:http://localhost:8080/files}
 
 cors:
   url: http://localhost:3000

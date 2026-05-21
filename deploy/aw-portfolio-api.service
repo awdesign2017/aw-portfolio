@@ -1,0 +1,34 @@
+[Unit]
+Description=aw-portfolio Spring Boot API
+After=network.target mysql.service
+Wants=mysql.service
+
+[Service]
+Type=simple
+User=awdesign
+Group=awdesign
+WorkingDirectory=/home/awdesign/spring-server/target
+
+# DB / 도메인 / 파일 저장 경로 등은 /etc/aw-portfolio.env 에서 주입
+EnvironmentFile=/etc/aw-portfolio.env
+
+ExecStart=/usr/bin/java \
+  -Dspring.profiles.active=real \
+  -Duser.timezone=Asia/Seoul \
+  -Xms256m -Xmx1024m \
+  -jar /home/awdesign/spring-server/target/project.jar
+
+Restart=always
+RestartSec=5
+SuccessExitStatus=143
+
+# 로그
+StandardOutput=append:/home/awdesign/logs/spring.out
+StandardError=append:/home/awdesign/logs/spring.err
+
+# 권장 보안
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
