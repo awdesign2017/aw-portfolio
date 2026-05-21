@@ -86,7 +86,7 @@ ssh -t stay-season-fetcher "
 "
 
 echo
-echo "==> [7/7] nginx 사이트 갱신 + /files 권한 보정"
+echo "==> [7/7] nginx 사이트 갱신 + SSL 재적용 + /files 권한 보정"
 scp ./nginx-alwaysdesign-portfolio.conf stay-season-fetcher:/tmp/
 ssh -t stay-season-fetcher "
   # 이전 단계에서 만든 portfolio.always-design.co.kr 파일은 정리 (upstream 중복 방지)
@@ -97,6 +97,16 @@ ssh -t stay-season-fetcher "
     /etc/nginx/sites-available/alwaysdesign-portfolio.com
   sudo ln -sf /etc/nginx/sites-available/alwaysdesign-portfolio.com \
               /etc/nginx/sites-enabled/alwaysdesign-portfolio.com
+
+  # SSL 자동 재적용: 우리 conf 에는 80 만 있으므로 매번 certbot 이 443/ssl_certificate 라인을 다시 붙여야 한다.
+  # 인증서 이미 발급된 상태에서는 --reinstall 로 빠르게 적용 (재발급 아님).
+  # 첫 배포(인증서 없을 때)는 ./05_finalize_ssl_dns.sh 에서 처리하므로 여기서는 실패해도 무해.
+  sudo certbot --nginx --reinstall \
+    -d alwaysdesign-portfolio.com \
+    -d www.alwaysdesign-portfolio.com \
+    -d portfolio.always-design.co.kr \
+    --redirect --agree-tos --no-eff-email -m tom@bisonai.com 2>/dev/null \
+    || echo '(SSL 인증서 미발급 상태 — 처음 배포라면 ./05_finalize_ssl_dns.sh 를 별도로 실행하세요)'
 
   # /home/awdesign 디렉토리 traverse 권한 (nginx www-data 가 /files/ 정적 파일 접근)
   sudo chmod o+x /home/awdesign
