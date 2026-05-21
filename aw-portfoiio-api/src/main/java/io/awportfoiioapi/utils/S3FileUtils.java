@@ -145,4 +145,16 @@ public class S3FileUtils {
     public Path resolveLocalPath(String folder, String fileName) {
         return Paths.get(storageLocation, folder, fileName);
     }
+
+    /**
+     * 단일 상대 경로(예: "submission/uuid.jpg" 또는 "files/submission/uuid.jpg")로 로컬 경로 해석.
+     * "files/" prefix 는 자동 strip 한다. (DB 의 URL 이 https://.../files/... 형태이고
+     * 프론트가 url.pathname 을 그대로 path 로 사용해 호출하기 때문)
+     */
+    public Path resolveLocalPath(String relativeKey) {
+        if (relativeKey == null) return null;
+        String key = relativeKey.startsWith("/") ? relativeKey.substring(1) : relativeKey;
+        if (key.startsWith("files/")) key = key.substring("files/".length());
+        return Paths.get(storageLocation).resolve(key).normalize();
+    }
 }
