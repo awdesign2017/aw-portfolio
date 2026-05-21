@@ -5,21 +5,17 @@ import io.awportfoiioapi.excel.dto.request.ExcelRequest;
 import io.awportfoiioapi.excel.service.ExcelService;
 import io.awportfoiioapi.utils.S3FileUtils;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriUtils;
-import software.amazon.awssdk.core.ResponseInputStream;
-import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.GetObjectRequest;
-import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 
-import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 @RequiredArgsConstructor
 @RestController
@@ -27,25 +23,20 @@ import java.nio.charset.StandardCharsets;
 public class ExcelController {
 
     private final ExcelService excelService;
-
-    private final S3Client s3Client;
-
-     @Value("${spring.cloud.aws.s3.bucket}")
-     private String bucketName;
+    private final S3FileUtils s3FileUtils;
 
 
     @PostMapping("/excel")
     public ResponseEntity<byte[]> getExcel(@RequestBody ExcelRequest request) {
 
-    byte[] excelFile = excelService.createSubmissionExcel(request);
+        byte[] excelFile = excelService.createSubmissionExcel(request);
 
-    //파일명 (원하면 동적으로 생성해도 됨)
-    String fileName = "submission.xlsx";
+        String fileName = "submission.xlsx";
 
-    return ResponseEntity.ok()
-            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
-            .header(HttpHeaders.CONTENT_TYPE, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-            .body(excelFile);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
+                .header(HttpHeaders.CONTENT_TYPE, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                .body(excelFile);
     }
 
     @PostMapping("/submitOff")
@@ -58,35 +49,28 @@ public class ExcelController {
         return excelService.copyPortfolio(portfolioId);
     }
 
+    /**
+     * 로컬 디스크에 저장된 파일을 다운로드한다.
+     * 프론트(DynamicFormField.tsx)에서 a.download = value.name 으로 파일명을 지정하므로
+     * 헤더에는 URL의 파일명만 인코딩하여 fallback으로 둔다.
+     */
     @GetMapping("/download/{folder}/{fileName}")
-             public ResponseEntity<Resource> download(
-                     @PathVariable String fileName,
-                     @PathVariable String folder
-             ) {
-                 String key = folder + "/" + fileName;
-                 ResponseInputStream<GetObjectResponse> object = s3Client.getObject(
-                         GetObjectRequest.builder()
-                                 .bucket(bucketName)
-                                 .key(key)
-                                 .build()
-                 );
+    public ResponseEntity<Resource> download(
+            @PathVariable String folder,
+            @PathVariable String fileName
+    ) {
+        Path filePath = s3FileUtils.resolveLocalPath(folder, fileName);
+        if (!Files.exists(filePath)) {
+            return ResponseEntity.notFound().build();
+        }
 
-                 // 메타데이터에서 원본 파일명 가져오기
-                 String encodedFilenameInMetadata = object.response().metadata().get("original-filename");
+        Resource resource = new FileSystemResource(filePath);
+        String encodedFilename = UriUtils.encode(fileName, StandardCharsets.UTF_8);
+        String contentDisposition = "attachment; filename*=UTF-8''" + encodedFilename;
 
-                 // 원래 이름 복원 (디코딩)
-                 String decodedFilename = encodedFilenameInMetadata != null
-                         ? URLDecoder.decode(encodedFilenameInMetadata, StandardCharsets.UTF_8)
-                         : fileName;
-
-                 // 다시 Content-Disposition용으로 인코딩 (한 번만)
-                 String encodedFilename = UriUtils.encode(decodedFilename, StandardCharsets.UTF_8);
-                 String contentDisposition = "attachment; filename*=UTF-8''" + encodedFilename;
-
-                 InputStreamResource resource = new InputStreamResource(object);
-                 return ResponseEntity.ok()
-                         .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition)
-                         .contentType(MediaType.APPLICATION_OCTET_STREAM)
-                         .body(resource);
-             }
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition)
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .body(resource);
+    }
 }

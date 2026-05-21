@@ -1,41 +1,10 @@
 package io.awportfoiioapi.config;
 
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
-import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
-import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.presigner.S3Presigner;
-
-@Configuration
+/**
+ * S3 의존성 제거에 따라 빈 클래스로 유지한다.
+ * (Spring 컴포넌트 스캔 충돌 방지를 위해 클래스 자체는 남겨둠)
+ *
+ * 파일 저장은 {@link io.awportfoiioapi.utils.S3FileUtils}가 로컬 디스크 기반으로 처리한다.
+ */
 public class S3Config {
-    
-    @Value("${spring.cloud.aws.credentials.access-key}")
-    private String accessKey;
-    
-    @Value("${spring.cloud.aws.credentials.secret-key}")
-    private String secretKey;
-    
-    @Value("${spring.cloud.aws.region.static}")
-    private String region;
-    
-    @Bean
-    public S3Client s3Client() {
-        return S3Client.builder()
-                .region(Region.of(region))
-                .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create(accessKey, secretKey)))
-                .build();
-    }
-    @Bean
-    public S3Presigner s3Presigner() {
-        return S3Presigner.builder().region(Region.of(region)).credentialsProvider(
-                        StaticCredentialsProvider.create(
-                                AwsBasicCredentials.create(accessKey, secretKey)
-                        )
-                )
-                .build();
-    }
-    
 }

@@ -17,23 +17,20 @@ spring:
       max-file-size: 100MB
       max-request-size: 100MB
 
-  cloud:
-    aws:
-      credentials:
-        access-key: ${AWS_ACCESS_KEY}
-        secret-key: ${AWS_SECRET_KEY}
-      region:
-        static: ${AWS_REGION}
-      s3:
-        bucket: ${AWS_BUCKET}
   cache:
     cache-names: presigned
     caffeine:
       spec: expireAfterWrite=50m
 
+# 로컬 파일 저장소 설정 (운영)
+file:
+  storage:
+    location: ${FILE_STORAGE_LOCATION:/home/awdesign/uploads}
+    base-url: ${FILE_STORAGE_BASE_URL:https://alwaysdesign-portfolio.com/files}
+
 logging:
   file:
-    name: /home/ubuntu/logs/spring.log
+    name: /home/awdesign/logs/spring.log
     level:
       root: INFO
   logback:
