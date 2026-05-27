@@ -27,8 +27,8 @@ chmod +x ./gradlew
 
 cp build/libs/*SNAPSHOT.jar /home/awdesign/spring-server/target/project.jar
 
-sudo systemctl restart aw-portfolio-api
+sudo /usr/bin/systemctl restart aw-portfolio-api
 sleep 3
-sudo systemctl status aw-portfolio-api --no-pager | head -20
+sudo /usr/bin/systemctl status aw-portfolio-api --no-pager | head -20
 
 echo "✅ 백엔드 재배포 완료. 로그: journalctl -u aw-portfolio-api -f"
