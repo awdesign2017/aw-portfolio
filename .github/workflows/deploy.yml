@@ -1,0 +1,103 @@
+name: Deploy (stay-season-fetcher)
+
+# ============================================================================
+#  배포 트리거 두 가지:
+#  1) 수동 — Actions 탭 → "Run workflow" → backend / frontend / both 선택
+#  2) 자동 — main 브랜치 push 시, 변경된 디렉토리만 자동 배포
+#           (aw-portfoiio-api → backend, aw-portfoiio-front → frontend)
+#
+#  필요 Secrets (Settings → Secrets and variables → Actions):
+#    SSH_HOST          = 1.226.82.152
+#    SSH_USER          = awdesign
+#    SSH_PRIVATE_KEY   = stay-season-fetcher 접속용 SSH 개인 키 (전체 PEM)
+# ============================================================================
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: '배포 대상'
+        required: true
+        default: 'both'
+        type: choice
+        options:
+          - backend
+          - frontend
+          - both
+  push:
+    branches: [main]
+    paths:
+      - 'aw-portfoiio-api/**'
+      - 'aw-portfoiio-front/**'
+      - 'deploy/deploy-backend.sh'
+      - 'deploy/deploy-frontend.sh'
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  detect:
+    runs-on: ubuntu-latest
+    outputs:
+      run_backend:  ${{ steps.decide.outputs.run_backend }}
+      run_frontend: ${{ steps.decide.outputs.run_frontend }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: changes
+        if: github.event_name == 'push'
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            backend:
+              - 'aw-portfoiio-api/**'
+              - 'deploy/deploy-backend.sh'
+            frontend:
+              - 'aw-portfoiio-front/**'
+              - 'deploy/deploy-frontend.sh'
+
+      - id: decide
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            T="${{ inputs.target }}"
+            [ "$T" = "backend"  ] || [ "$T" = "both" ] && echo "run_backend=true"  >> $GITHUB_OUTPUT || echo "run_backend=false" >> $GITHUB_OUTPUT
+            [ "$T" = "frontend" ] || [ "$T" = "both" ] && echo "run_frontend=true" >> $GITHUB_OUTPUT || echo "run_frontend=false" >> $GITHUB_OUTPUT
+          else
+            echo "run_backend=${{ steps.changes.outputs.backend }}"   >> $GITHUB_OUTPUT
+            echo "run_frontend=${{ steps.changes.outputs.frontend }}" >> $GITHUB_OUTPUT
+          fi
+
+  deploy-backend:
+    needs: detect
+    if: needs.detect.outputs.run_backend == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: SSH → 백엔드 재배포
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
+          command_timeout: 15m
+          script_stop: true
+          script: |
+            bash /home/awdesign/repo/aw-portfolio/deploy/deploy-backend.sh
+
+  deploy-frontend:
+    needs: detect
+    if: needs.detect.outputs.run_frontend == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: SSH → 프론트엔드 재배포
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
+          command_timeout: 15m
+          script_stop: true
+          script: |
+            bash /home/awdesign/repo/aw-portfolio/deploy/deploy-frontend.sh
