@@ -57,13 +57,14 @@ sudo chown -R awdesign:awdesign /home/awdesign/spring-server /home/awdesign/next
                             /home/awdesign/uploads /home/awdesign/logs \
                             /home/awdesign/repo /home/awdesign/migration
 
+if [ -z "${DB_PASSWORD:-}" ]; then read -rsp "admin DB 비밀번호 입력: " DB_PASSWORD; echo; fi   # 비밀번호는 스크립트·문서에 적지 않는다
 echo "==> [7/7] MySQL 사용자 + DB 준비"
 sudo mysql --protocol=socket -uroot <<SQL
 CREATE DATABASE IF NOT EXISTS PORTFOLIO
   DEFAULT CHARACTER SET utf8mb4
   DEFAULT COLLATE utf8mb4_unicode_ci;
 
-CREATE USER IF NOT EXISTS 'admin'@'localhost' IDENTIFIED BY '***REMOVED***';
+CREATE USER IF NOT EXISTS 'admin'@'localhost' IDENTIFIED BY '${DB_PASSWORD}';
 GRANT ALL PRIVILEGES ON PORTFOLIO.* TO 'admin'@'localhost';
 FLUSH PRIVILEGES;
 SQL

@@ -18,18 +18,18 @@ fi
 
 echo "==> [1/3] DB 덤프 전송 + 임포트 ($DUMP)"
 scp "$DUMP" stay-season-fetcher:/home/awdesign/migration/portfolio.sql
-ssh stay-season-fetcher '
+ssh -t stay-season-fetcher '
   set -euo pipefail
-  mysql -uadmin -p"***REMOVED***" -h 127.0.0.1 -P 3307 PORTFOLIO < /home/awdesign/migration/portfolio.sql
-  echo "    임포트 완료. 테이블 수: $(mysql -uadmin -p"***REMOVED***" -h 127.0.0.1 -P 3307 -N -e "SHOW TABLES" PORTFOLIO | wc -l)"
+  mysql -uadmin -p -h 127.0.0.1 -P 3307 PORTFOLIO < /home/awdesign/migration/portfolio.sql
+  echo "    임포트 완료. 테이블 수: $(mysql -uadmin -p -h 127.0.0.1 -P 3307 -N -e "SHOW TABLES" PORTFOLIO | wc -l)"
 '
 
 echo "==> [2/3] 업로드 파일 전송 (rsync)"
 rsync -avh --progress "$WORK/uploads/" stay-season-fetcher:/home/awdesign/uploads/
 
 echo "==> [3/3] DB의 S3 URL → 로컬 URL 일괄 변경"
-ssh stay-season-fetcher '
-  mysql -uadmin -p"***REMOVED***" -h 127.0.0.1 -P 3307 PORTFOLIO <<SQL
+ssh -t stay-season-fetcher '
+  mysql -uadmin -p -h 127.0.0.1 -P 3307 PORTFOLIO <<SQL
 -- 기존: https://portfolio-always-files.s3.ap-northeast-2.amazonaws.com/<folder>/<uuid>.<ext>
 -- 신규: https://portfolio.always-design.co.kr/files/<folder>/<uuid>.<ext>
 UPDATE COMMON_FILE

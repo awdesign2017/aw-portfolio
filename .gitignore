@@ -49,3 +49,11 @@ prisma/*.db-journal
 # 외주 작업 gitignore 세팅
 .idea
 /aw-portfoiio-api/aw-portfoiio-api.iml
+
+# 운영 데이터 / 비밀값 — 커밋 금지 (2026-09 유출 사고 재발 방지)
+/deploy/_migration/
+/deploy/*.env
+*.sql
+*.sql.gz
+*.pem
+*.key

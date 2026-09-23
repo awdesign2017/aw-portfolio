@@ -68,7 +68,7 @@
 DB_URL=127.0.0.1
 DB_PORT=3307
 DB_USERNAME=admin
-DB_PASSWORD=***REMOVED***
+DB_PASSWORD=<비공개 — 서버 /etc/aw-portfolio.env 에만 둠. 문서·커밋에 적지 말 것>
 FILE_STORAGE_LOCATION=/home/awdesign/uploads
 FILE_STORAGE_BASE_URL=https://alwaysdesign-portfolio.com/files
 ```
@@ -172,9 +172,11 @@ pm2 status
 
 ## 9. 백업 권장 (아직 미설정)
 
+> 비밀번호는 cron·문서에 직접 쓰지 않는다. `/home/awdesign/.aw-portfolio-db.cnf` (awdesign 소유, 600) 에 `[client]` user/password/host/port 를 두고 `--defaults-extra-file` 로 읽는다.
+
 ```bash
 # /etc/cron.d/aw-portfolio-backup
-0 3 * * * awdesign mysqldump -uadmin -p'***REMOVED***' -h127.0.0.1 -P3307 PORTFOLIO | gzip > /home/awdesign/backup/portfolio_$(date +\%F).sql.gz
+0 3 * * * awdesign mysqldump --defaults-extra-file=/home/awdesign/.aw-portfolio-db.cnf PORTFOLIO | gzip > /home/awdesign/backup/portfolio_$(date +\%F).sql.gz
 0 4 * * * awdesign rsync -a --delete /home/awdesign/uploads/ /외부백업경로/uploads/
 ```
 

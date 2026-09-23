@@ -7,8 +7,8 @@
 # ===========================================================================
 set -euo pipefail
 
-ssh stay-season-fetcher '
-  mysql -uadmin -p"***REMOVED***" -h 127.0.0.1 -P 3307 PORTFOLIO <<SQL
+ssh -t stay-season-fetcher '
+  mysql -uadmin -p -h 127.0.0.1 -P 3307 PORTFOLIO <<SQL
 UPDATE COMMON_FILE
 SET COMMON_FILE_URL = REPLACE(
     COMMON_FILE_URL,

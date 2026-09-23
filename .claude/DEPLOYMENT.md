@@ -95,7 +95,7 @@ ssh stay-season-fetcher 'pm2 status'
 ssh stay-season-fetcher 'sudo ss -tnlp | grep -E ":3001|:3307|:8080"'
 
 # DB
-ssh stay-season-fetcher "mysql -uadmin -p'***REMOVED***' -h127.0.0.1 -P3307 PORTFOLIO -e 'SHOW TABLES;'"
+ssh -t stay-season-fetcher "mysql -uadmin -p -h127.0.0.1 -P3307 PORTFOLIO -e 'SHOW TABLES;'"
 ```
 
 ## 미해결 / 남은 작업

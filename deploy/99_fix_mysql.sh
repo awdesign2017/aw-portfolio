@@ -63,12 +63,13 @@ ss -tnlp | grep -E "mysqld|:$PORT" || true
 mysql --protocol=socket -uroot -e "SELECT @@port AS port, VERSION() AS version, @@bind_address AS bind_addr;"
 
 echo
+if [ -z "${DB_PASSWORD:-}" ]; then read -rsp "admin DB 비밀번호 입력: " DB_PASSWORD; echo; fi   # 비밀번호는 스크립트·문서에 적지 않는다
 echo "=== [8] PORTFOLIO DB + admin 사용자 생성 ==="
 mysql --protocol=socket -uroot -e "
 CREATE DATABASE IF NOT EXISTS PORTFOLIO
   DEFAULT CHARACTER SET utf8mb4
   DEFAULT COLLATE utf8mb4_unicode_ci;
-CREATE USER IF NOT EXISTS 'admin'@'localhost' IDENTIFIED BY '***REMOVED***';
+CREATE USER IF NOT EXISTS 'admin'@'localhost' IDENTIFIED BY '${DB_PASSWORD}';
 GRANT ALL PRIVILEGES ON PORTFOLIO.* TO 'admin'@'localhost';
 FLUSH PRIVILEGES;
 SHOW DATABASES;
@@ -76,8 +77,8 @@ SHOW DATABASES;
 
 echo
 echo "=== [9] admin 사용자로 $PORT 포트 접속 테스트 ==="
-mysql -uadmin -p'***REMOVED***' -h 127.0.0.1 -P $PORT -e "SELECT 'admin login OK' AS status, @@port AS port;"
-mysql -uadmin -p'***REMOVED***' -h 127.0.0.1 -P $PORT PORTFOLIO -e "SHOW TABLES;"
+mysql -uadmin -p"$DB_PASSWORD" -h 127.0.0.1 -P $PORT -e "SELECT 'admin login OK' AS status, @@port AS port;"
+mysql -uadmin -p"$DB_PASSWORD" -h 127.0.0.1 -P $PORT PORTFOLIO -e "SHOW TABLES;"
 
 echo
 echo "✅ MySQL $PORT 격리 설치 완료"

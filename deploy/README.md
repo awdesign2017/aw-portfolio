@@ -147,7 +147,7 @@ curl -sI https://alwaysdesign-portfolio.com/files/portfolio/<uuid>.png         #
 | `502 Bad Gateway` (백엔드) | `sudo systemctl status aw-portfolio-api` + `journalctl -u aw-portfolio-api -n 100` 으로 부팅 실패 확인. 대부분 DB 연결 또는 env 누락 |
 | `502 Bad Gateway` (프론트) | `pm2 logs aw-portfolio-front` 확인. 빌드 실패 또는 `-p 3001` 충돌 |
 | `nginx -t` `duplicate upstream` | sites-enabled 에 우리 vhost 가 두 번 등록됨. `04_deploy_app_local.sh` 의 [7] 단계가 옛 파일 자동 제거 |
-| MySQL 연결 실패 | `mysql -uadmin -p'***REMOVED***' -h127.0.0.1 -P3307` 로 접속 테스트. `/etc/aw-portfolio.env` 의 `DB_PORT=3307` 확인 |
+| MySQL 연결 실패 | `mysql -uadmin -p -h127.0.0.1 -P3307` 로 접속 테스트. `/etc/aw-portfolio.env` 의 `DB_PORT=3307` 확인 |
 | 부 도메인 페이지에서 `등록된 타입이 존재하지 않습니다` alert 3번 | 부 도메인이 메인으로 redirect 되지 않은 상태. `./99_apply_nginx.sh` 재실행 |
 | Let's Encrypt 발급 실패 | 80 포트 인터넷 접근 가능 여부 + DNS 가 1.226.82.152 가리키는지 확인 |
 | 한글 파일명 깨짐 | `SHOW VARIABLES LIKE 'character_set%';` 모두 utf8mb4 여야 함 |
@@ -156,7 +156,7 @@ curl -sI https://alwaysdesign-portfolio.com/files/portfolio/<uuid>.png         #
 
 ```bash
 # /etc/cron.d/aw-portfolio-backup (예시)
-0 3 * * * awdesign mysqldump -uadmin -p'***REMOVED***' -h127.0.0.1 -P3307 PORTFOLIO | gzip > /home/awdesign/backup/portfolio_$(date +\%F).sql.gz && find /home/awdesign/backup -name 'portfolio_*.sql.gz' -mtime +14 -delete
+0 3 * * * awdesign mysqldump --defaults-extra-file=/home/awdesign/.aw-portfolio-db.cnf PORTFOLIO | gzip > /home/awdesign/backup/portfolio_$(date +\%F).sql.gz && find /home/awdesign/backup -name 'portfolio_*.sql.gz' -mtime +14 -delete
 0 4 * * * awdesign rsync -a --delete /home/awdesign/uploads/ /외부백업경로/uploads/
 ```
 
