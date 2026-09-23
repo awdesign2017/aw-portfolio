@@ -9,9 +9,7 @@ import io.awportfoiioapi.security.pem.PemKey;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.io.ClassPathResource;
 
-import java.io.InputStream;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 
@@ -30,9 +28,8 @@ public class SignatureConfig {
     
     @Bean
     public RSAKey rsaKey() throws Exception {
-        InputStream publicKeyStream = new ClassPathResource("keys/public.pem").getInputStream();
-        RSAPublicKey publicKey = PemKey.loadPublicKey(publicKeyStream);
         RSAPrivateKey privateKey = PemKey.loadPrivateKey(repository.findAll().get(0).getRsaPrivateKey());
+        RSAPublicKey publicKey = PemKey.derivePublicKey(privateKey);
         return new RSAKey.Builder(publicKey)
                 .privateKey(privateKey)
                 .keyID("rsaKey")

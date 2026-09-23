@@ -1,16 +1,15 @@
 package io.awportfoiioapi.security.pem;
 
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.security.KeyFactory;
+import java.security.interfaces.RSAPrivateCrtKey;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.PKCS8EncodedKeySpec;
-import java.security.spec.X509EncodedKeySpec;
+import java.security.spec.RSAPublicKeySpec;
 import java.util.Base64;
 
 public class PemKey {
-    
+
     public  static RSAPrivateKey loadPrivateKey(String pem) throws Exception {
         String privateKeyPem = pem
                 .replace("-----BEGIN PRIVATE KEY-----", "")
@@ -22,17 +21,11 @@ public class PemKey {
         PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(decoded);
         return (RSAPrivateKey) KeyFactory.getInstance("RSA").generatePrivate(spec);
     }
-    
-    public  static RSAPublicKey loadPublicKey(InputStream inputStream) throws Exception {
-        String key = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
-        
-        String publicKeyPem = key
-                .replace("-----BEGIN PUBLIC KEY-----", "")
-                .replace("-----END PUBLIC KEY-----", "")
-                .replaceAll("\\s+", ""); // 줄바꿈, 탭 등 모두 제거
-        
-        byte[] decoded = Base64.getDecoder().decode(publicKeyPem);
-        X509EncodedKeySpec spec = new X509EncodedKeySpec(decoded);
+
+    // 공개키를 개인키(CRT)에서 계산 → 키 교체 시 DB 의 RSA 행만 바꾸면 됨 (public.pem 불필요)
+    public  static RSAPublicKey derivePublicKey(RSAPrivateKey privateKey) throws Exception {
+        RSAPrivateCrtKey crtKey = (RSAPrivateCrtKey) privateKey;
+        RSAPublicKeySpec spec = new RSAPublicKeySpec(crtKey.getModulus(), crtKey.getPublicExponent());
         return (RSAPublicKey) KeyFactory.getInstance("RSA").generatePublic(spec);
     }
 }
