@@ -253,42 +253,47 @@ export default function SuperAdminPage() {
 
     //포트폴리오 카드 (카테고리별 구역에서 사용)
     const renderPortfolioCard = (portfolio: PortfolioContent) => (
-        <div key={portfolio.id} className="bg-white border-2 border-black rounded-lg overflow-hidden">
-            {portfolio.thumbnail && (
-                <div className="w-full bg-gray-200">
-                    <img src={portfolio.thumbnail} alt={portfolio.title} className="w-full h-full" />
-                </div>
-            )}
-            <div className="p-6">
-                <div className="flex justify-between items-start mb-4">
-                    <div className="flex-1">
-                        <h3 className="text-xl font-bold text-black">{portfolio.title}</h3>
-                        <div className="flex items-center gap-2 mt-1">
-                            {portfolio.category && <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">{portfolio.category.name}</span>}
-                            {!portfolio.isActive && <span className="text-xs bg-gray-200 px-2 py-1 rounded">비활성</span>}
-                        </div>
+        <div key={portfolio.id} className={`group flex flex-col bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden hover:shadow-xl hover:-translate-y-1 hover:border-accent-200 transition-all duration-300 ${portfolio.isActive ? '' : 'opacity-75'}`}>
+            {/* 썸네일 */}
+            <div className="relative aspect-[4/3] bg-gray-100 overflow-hidden">
+                {portfolio.thumbnail ? (
+                    <img src={portfolio.thumbnail} alt={portfolio.title} className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500" />
+                ) : (
+                    <div className="w-full h-full flex items-center justify-center text-gray-300">
+                        <Icon name="photo" className="w-12 h-12" />
                     </div>
-                </div>
-                {portfolio.description && <p className="text-gray-600 mb-4">{portfolio.description}</p>}
-                <div className="text-sm text-gray-500 mb-4">
-                    <div>슬러그: {portfolio.slug}</div>
-                    <div>순서: {portfolio.order}</div>
+                )}
+                {portfolio.category && <span className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-white/90 backdrop-blur text-xs font-bold text-accent-700 shadow-sm">{portfolio.category.name}</span>}
+                <span className={`absolute top-3 right-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold shadow-sm ${portfolio.isActive ? 'bg-emerald-500 text-white' : 'bg-gray-800/80 text-white'}`}>
+                    <span className="w-1.5 h-1.5 rounded-full bg-white" />
+                    {portfolio.isActive ? '활성' : '비활성'}
+                </span>
+            </div>
+
+            <div className="flex-1 flex flex-col p-5">
+                <h3 className="text-lg font-bold text-gray-900 line-clamp-1">{portfolio.title}</h3>
+                {portfolio.description && <p className="text-sm text-gray-500 mt-1 line-clamp-2">{portfolio.description}</p>}
+                <p className="text-xs text-gray-400 font-mono mt-2 truncate">/{portfolio.slug}</p>
+
+                <div className="flex flex-wrap gap-1.5 mt-4">
+                    <span className="px-2 py-1 rounded-md bg-gray-100 text-xs font-semibold text-gray-600">순서 {portfolio.order}</span>
                     {portfolio.count && (
                         <>
-                            <div>질문: {portfolio.count.questions}개</div>
-                            <div>제출: {portfolio.count.submissions}개</div>
+                            <span className="px-2 py-1 rounded-md bg-gray-100 text-xs font-semibold text-gray-600">질문 {portfolio.count.questions}</span>
+                            <span className="px-2 py-1 rounded-md bg-accent-50 text-xs font-semibold text-accent-700">제출 {portfolio.count.submissions}</span>
                         </>
                     )}
                 </div>
-                <div className="flex gap-2">
-                    <button onClick={() => handleEditPortfolio(portfolio)} className="flex-1 px-3 py-2 text-sm border-2 border-black rounded hover:bg-black hover:text-white transition-all">
+
+                <div className="grid grid-cols-3 gap-2 mt-auto pt-5">
+                    <button onClick={() => handleEditPortfolio(portfolio)} className="px-3 py-2 rounded-lg bg-gray-900 text-white text-sm font-semibold hover:bg-accent-600 transition-all">
                         수정
                     </button>
-                    <button onClick={() => handleDeletePortfolio(portfolio.id)} className="flex-1 px-3 py-2 text-sm border-2 border-red-500 text-red-500 rounded hover:bg-red-500 hover:text-white transition-all">
-                        삭제
-                    </button>
-                    <button onClick={() => handleCopyPortfolio(portfolio.id)} className="flex-1 px-3 py-2 text-sm border-2 border-green-500 text-green-500 rounded hover:bg-green-500 hover:text-white transition-all">
+                    <button onClick={() => handleCopyPortfolio(portfolio.id)} className="px-3 py-2 rounded-lg bg-gray-100 text-gray-700 text-sm font-semibold hover:bg-gray-200 transition-all">
                         복제
+                    </button>
+                    <button onClick={() => handleDeletePortfolio(portfolio.id)} className="px-3 py-2 rounded-lg bg-red-50 text-red-600 text-sm font-semibold hover:bg-red-600 hover:text-white transition-all">
+                        삭제
                     </button>
                 </div>
             </div>
@@ -843,28 +848,50 @@ export default function SuperAdminPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center">
-                <div className="text-xl">로딩 중...</div>
+            <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-gray-50">
+                <div className="w-10 h-10 rounded-full border-4 border-accent-100 border-t-accent-600 animate-spin" />
+                <div className="text-sm font-medium text-gray-500">불러오는 중...</div>
             </div>
         );
     }
 
+    //상단 탭 메뉴
+    const ADMIN_TABS: { key: TabType; label: string; icon: IconName }[] = [
+        { key: 'portfolios', label: '포트폴리오 관리', icon: 'grid' },
+        { key: 'questions', label: '질문 관리', icon: 'question' },
+        { key: 'users', label: '사용자 관리', icon: 'users' },
+        { key: 'submissions', label: '제출 목록', icon: 'document' },
+        { key: 'categories', label: '카테고리 관리', icon: 'folder' },
+    ];
+
     return (
         <div className="min-h-screen bg-gray-50">
             {/* Header */}
-            <header className="bg-black text-white border-b-2 border-black">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-                    <div className="flex justify-between items-center md:flex-row flex-col">
-                        <h1 className="text-2xl font-bold">최고 관리자 페이지</h1>
-                        <div className="flex items-center gap-4 mt-2 md:mt-0">
-                            <span className="text-gray-300">{currentUser?.name}</span>
-                            <button onClick={() => router.push('/')} className="px-2 md:px-4 py-2 bg-white text-black rounded-lg font-semibold hover:bg-gray-200 transition-all">
+            <header className="relative overflow-hidden bg-gray-900 text-white">
+                {/* 배경 포인트 */}
+                <div className="pointer-events-none absolute -top-24 -right-24 w-72 h-72 rounded-full bg-accent-600/30 blur-3xl" />
+                <div className="pointer-events-none absolute -bottom-32 left-1/3 w-72 h-72 rounded-full bg-accent-500/10 blur-3xl" />
+
+                <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
+                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                            <span className="px-2 py-1 rounded-md bg-accent-600 text-[11px] font-bold tracking-widest shadow-lg shadow-accent-600/40">ADMIN</span>
+                            <h1 className="text-xl md:text-2xl font-bold tracking-tight">최고 관리자 페이지</h1>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 mr-2">
+                                <span className="w-8 h-8 rounded-full bg-white/10 ring-1 ring-white/20 flex items-center justify-center text-sm font-bold">{currentUser?.name?.charAt(0)}</span>
+                                <span className="text-sm text-gray-300">{currentUser?.name}</span>
+                            </div>
+                            <button onClick={() => router.push('/')} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white/10 text-sm font-semibold hover:bg-white/20 transition-all">
+                                <Icon name="home" className="w-4 h-4" />
                                 메인 페이지
                             </button>
                             {/* <button onClick={() => router.push('/admin/dashboard')} className="hidden md:block px-2 md:px-4 py-2 bg-white text-black rounded-lg font-semibold hover:bg-gray-200 transition-all">
                                 일반 대시보드
                             </button> */}
-                            <button onClick={handleLogout} className="px-2 md:px-4 py-2 bg-gray-800 text-white rounded-lg font-semibold hover:bg-gray-700 transition-all">
+                            <button onClick={handleLogout} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white text-gray-900 text-sm font-semibold hover:bg-red-500 hover:text-white transition-all">
+                                <Icon name="logout" className="w-4 h-4" />
                                 로그아웃
                             </button>
                         </div>
@@ -873,50 +900,40 @@ export default function SuperAdminPage() {
             </header>
 
             {/* Tabs */}
-            <div className="bg-white border-b-2 border-gray-200">
+            <nav className="sticky top-0 z-30 bg-white/90 backdrop-blur border-b border-gray-200 shadow-sm">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex gap-0 md:gap-8 justify-center md:justify-start flex-wrap md:flex-nowrap">
-                        <button
-                            onClick={() => {
-                                setActiveTab('portfolios');
-                            }}
-                            className={`py-1 md:py-4 px-2 font-semibold border-b-4 transition-all ${activeTab === 'portfolios' ? 'border-black text-black' : 'border-transparent text-gray-500 hover:text-black'}`}
-                        >
-                            포트폴리오 관리
-                        </button>
-                        <button onClick={() => setActiveTab('questions')} className={`py-1 md:py-4 px-2 font-semibold border-b-4 transition-all ${activeTab === 'questions' ? 'border-black text-black' : 'border-transparent text-gray-500 hover:text-black'}`}>
-                            질문 관리
-                        </button>
-                        <button onClick={() => setActiveTab('users')} className={`py-1 md:py-4 px-2 font-semibold border-b-4 transition-all ${activeTab === 'users' ? 'border-black text-black' : 'border-transparent text-gray-500 hover:text-black'}`}>
-                            사용자 관리
-                        </button>
-                        <button
-                            onClick={() => {
-                                setActiveTab('submissions');
-                            }}
-                            className={`py-1 md:py-4 px-2 font-semibold border-b-4 transition-all ${activeTab === 'submissions' ? 'border-black text-black' : 'border-transparent text-gray-500 hover:text-black'}`}
-                        >
-                            제출 목록
-                        </button>
-                        <button
-                            onClick={() => {
-                                setActiveTab('categories');
-                            }}
-                            className={`py-1 md:py-4 px-2 font-semibold border-b-4 transition-all ${activeTab === 'categories' ? 'border-black text-black' : 'border-transparent text-gray-500 hover:text-black'}`}
-                        >
-                            카테고리 관리
-                        </button>
+                    <div className="flex gap-1 overflow-x-auto py-2">
+                        {ADMIN_TABS.map((tab) => {
+                            const active = activeTab === tab.key;
+                            return (
+                                <button
+                                    key={tab.key}
+                                    onClick={() => setActiveTab(tab.key)}
+                                    className={`inline-flex items-center gap-2 shrink-0 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${active ? 'bg-gray-900 text-white shadow-md' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'}`}
+                                >
+                                    <Icon name={tab.icon} className={`w-4 h-4 ${active ? 'text-accent-200' : ''}`} />
+                                    {tab.label}
+                                </button>
+                            );
+                        })}
                     </div>
                 </div>
-            </div>
+            </nav>
 
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            {/* 제출 목록·카테고리 탭은 아래(모달 뒤)에 따로 렌더링되므로 그때는 여백 없음 */}
+            <div className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 ${activeTab === 'submissions' || activeTab === 'categories' ? '' : 'py-10'}`}>
                 {/* Portfolios Tab */}
                 {activeTab === 'portfolios' && (
                     <div>
-                        <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-2xl font-bold text-black">포트폴리오 목록</h2>
-
+                        <SectionHeader
+                            icon="grid"
+                            title="포트폴리오 관리"
+                            description={
+                                <>
+                                    총 <strong className="text-gray-900">{portfolios?.content?.length ?? 0}</strong>개 · 활성 <strong className="text-emerald-600">{portfolios?.content?.filter((p) => p.isActive).length ?? 0}</strong>개
+                                </>
+                            }
+                            action={
                             <button
                                 onClick={() => {
                                     setEditingPortfolio(null);
@@ -934,58 +951,68 @@ export default function SuperAdminPage() {
                                     });
                                     setShowPortfolioForm(true);
                                 }}
-                                className="px-4 py-2 bg-black text-white rounded-lg font-semibold hover:bg-gray-800 transition-all"
+                                className={BTN_PRIMARY}
                             >
-                                + 새 포트폴리오 추가
+                                <Icon name="plus" className="w-4 h-4" />새 포트폴리오 추가
                             </button>
-                        </div>
+                            }
+                        />
 
-                        {/* 검색 영역 */}
-                        <div className="mb-6 flex items-center gap-3">
-                            <input
-                                type="text"
-                                value={searchName}
-                                onChange={(e) => setSearchName(e.target.value)}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
+                        {/* 검색 + 카테고리 탭 */}
+                        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4 mb-10 flex flex-col lg:flex-row lg:items-center gap-4">
+                            {/* 검색 영역 */}
+                            <div className="flex items-center gap-2 lg:w-80 shrink-0">
+                                <div className="relative flex-1 min-w-0">
+                                    <Icon name="search" className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                                    <input
+                                        type="search"
+                                        value={searchName}
+                                        onChange={(e) => setSearchName(e.target.value)}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter') {
+                                                setPage(0);
+                                                fetchPortfolios();
+                                            }
+                                        }}
+                                        placeholder="포트폴리오 이름으로 검색"
+                                        className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-accent-500 focus:border-transparent transition-all"
+                                    />
+                                </div>
+                                <button
+                                    onClick={() => {
                                         setPage(0);
                                         fetchPortfolios();
-                                    }
-                                }}
-                                placeholder="포트폴리오 이름으로 검색"
-                                className="flex-1 min-w-0 px-4 py-2 border-2 border-gray-300 rounded-lg max-w-xs focus:outline-none focus:ring-2 focus:ring-black"
-                            />
+                                    }}
+                                    className="shrink-0 px-4 py-2.5 rounded-xl bg-gray-900 text-white text-sm font-semibold hover:bg-accent-600 transition-all"
+                                >
+                                    검색
+                                </button>
+                            </div>
 
-                            <button
-                                onClick={() => {
-                                    setPage(0);
-                                    fetchPortfolios();
-                                }}
-                                className="shrink-0 px-6 py-2 border-2 border-black rounded-lg font-semibold whitespace-nowrap hover:bg-black hover:text-white transition-all"
-                            >
-                                검색
-                            </button>
-                        </div>
+                            <div className="hidden lg:block w-px h-8 bg-gray-200" />
 
-                        {/* 카테고리 탭 */}
-                        <div className="mb-8 flex flex-wrap gap-2">
-                            {[{ id: 'all', name: '전체' }, ...(selectCategory ?? [])].map((category) => {
-                                const id = String(category.id);
-                                const count = id === 'all' ? (portfolios?.content?.length ?? 0) : (portfolios?.content?.filter((p) => String(p.categoryId) === id).length ?? 0);
-                                return (
-                                    <button
-                                        key={id}
-                                        onClick={() => setPortfolioCategoryTab(id)}
-                                        className={`px-4 py-2 rounded-full border-2 text-sm font-semibold transition-all ${portfolioCategoryTab === id ? 'bg-black border-black text-white' : 'bg-white border-gray-300 text-gray-600 hover:border-black hover:text-black'}`}
-                                    >
-                                        {category.name} <span className={portfolioCategoryTab === id ? 'text-gray-300' : 'text-gray-400'}>{count}</span>
-                                    </button>
-                                );
-                            })}
+                            {/* 카테고리 탭 */}
+                            <div className="flex flex-wrap gap-2">
+                                {[{ id: 'all', name: '전체' }, ...(selectCategory ?? [])].map((category) => {
+                                    const id = String(category.id);
+                                    const active = portfolioCategoryTab === id;
+                                    const count = id === 'all' ? (portfolios?.content?.length ?? 0) : (portfolios?.content?.filter((p) => String(p.categoryId) === id).length ?? 0);
+                                    return (
+                                        <button
+                                            key={id}
+                                            onClick={() => setPortfolioCategoryTab(id)}
+                                            className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${active ? 'bg-accent-600 text-white shadow-md shadow-accent-600/30' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-900'}`}
+                                        >
+                                            {category.name}
+                                            <span className={`min-w-[1.5rem] px-1.5 py-0.5 rounded-md text-xs font-bold ${active ? 'bg-white/20 text-white' : 'bg-white text-gray-500'}`}>{count}</span>
+                                        </button>
+                                    );
+                                })}
+                            </div>
                         </div>
 
                         {/* 카테고리별 구역 */}
-                        <div className="space-y-10 pb-10">
+                        <div className="space-y-12 pb-10">
                             {(selectCategory ?? [])
                                 .filter((category) => portfolioCategoryTab === 'all' || String(category.id) === portfolioCategoryTab)
                                 .map((category) => (
@@ -1008,7 +1035,7 @@ export default function SuperAdminPage() {
                                 />
                             )}
                             {portfolioCategoryTab === 'all' && portfolios?.content?.length === 0 && (
-                                <div className="bg-white border-2 border-gray-200 rounded-lg p-12 text-center text-gray-500">{searchName ? '검색 결과가 없습니다' : '등록된 포트폴리오가 없습니다'}</div>
+                                <EmptyState icon={searchName ? 'search' : 'grid'} title={searchName ? '검색 결과가 없습니다' : '등록된 포트폴리오가 없습니다'} description={searchName ? '다른 이름으로 검색해보세요' : '새 포트폴리오를 추가해보세요'} />
                             )}
                         </div>
                     </div>
@@ -1017,17 +1044,15 @@ export default function SuperAdminPage() {
                 {/* Questions Tab */}
                 {activeTab === 'questions' && (
                     <div>
-                        <div className="flex justify-between items-center mb-6">
-                            <div className="flex items-center gap-4 md:justify-center md:gap-1 md:flex-col">
-                                <h2 className="hidden md:block text-2xl font-bold text-black">질문 목록</h2>
-                                <select value={selectedPortfolio} onChange={(e) => setSelectedPortfolio(e.target.value)} className="px-4 py-2 md:px-0 md:py-1 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black">
-                                    {allPortfolios?.map((portfolio) => (
-                                        <option key={portfolio.id} value={portfolio.id}>
-                                            {portfolio.title}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
+                        <SectionHeader
+                            icon="question"
+                            title="질문 관리"
+                            description={
+                                <>
+                                    선택한 포트폴리오의 질문 <strong className="text-gray-900">{questions.length}</strong>개 · {new Set(questions.map((q) => q.step)).size}단계
+                                </>
+                            }
+                            action={
                             <button
                                 onClick={() => {
                                     setEditingQuestion(null);
@@ -1050,55 +1075,71 @@ export default function SuperAdminPage() {
                                     });
                                     setShowQuestionForm(true);
                                 }}
-                                className="px-4 py-2 bg-black text-white rounded-lg font-semibold hover:bg-gray-800 transition-all"
+                                className={BTN_PRIMARY}
                                 disabled={!selectedPortfolio}
                             >
-                                + 새 질문 추가
+                                <Icon name="plus" className="w-4 h-4" />새 질문 추가
                             </button>
+                            }
+                        />
+
+                        {/* 포트폴리오 선택 */}
+                        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4 mb-10 flex flex-col sm:flex-row sm:items-center gap-3">
+                            <label className="text-sm font-semibold text-gray-500 shrink-0">포트폴리오 선택</label>
+                            <select value={selectedPortfolio} onChange={(e) => setSelectedPortfolio(e.target.value)} className="flex-1 sm:max-w-md px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-sm font-semibold text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-accent-500 transition-all">
+                                {allPortfolios?.map((portfolio) => (
+                                    <option key={portfolio.id} value={portfolio.id}>
+                                        {portfolio.title}
+                                    </option>
+                                ))}
+                            </select>
                         </div>
 
                         {questions.length === 0 ? (
-                            <div className="text-center py-12 bg-white border-2 border-black rounded-lg">
-                                <p className="text-gray-600">이 포트폴리오에는 아직 질문이 없습니다.</p>
-                            </div>
+                            <EmptyState icon="question" title="이 포트폴리오에는 아직 질문이 없습니다" description="'새 질문 추가'로 첫 질문을 만들어보세요" />
                         ) : (
-                            <div className="space-y-4">
+                            <div className="space-y-6 pb-10">
                                 {Array.from(new Set(questions.map((q) => q.step)))
                                     .sort()
-                                    .map((step) => (
-                                        <div key={step} className="bg-white border-2 border-black rounded-lg p-6">
-                                            <h3 className="text-xl font-bold text-black mb-4">단계 {step}</h3>
-                                            <div className="space-y-3">
-                                                {questions
-                                                    .filter((q) => q.step === step)
-                                                    .sort((a, b) => a.order - b.order)
-                                                    .map((question) => (
-                                                        <div key={question.id} className="border-2 border-gray-300 rounded-lg p-4 hover:border-black transition-all">
-                                                            <div className="flex justify-between items-start">
-                                                                <div className="flex-1">
-                                                                    <div className="font-semibold text-black">
-                                                                        {question.title}
-                                                                        {question.isRequired && <span className="text-red-500 ml-1">*</span>}
-                                                                    </div>
-                                                                    {question.description && <div className="text-sm text-gray-600 mt-1">{question.description}</div>}
-                                                                    <div className="text-xs text-gray-500 mt-2">
-                                                                        최소 {question.minLength}자 | 순서: {question.order}
-                                                                    </div>
+                                    .map((step) => {
+                                        const stepQuestions = questions.filter((q) => q.step === step).sort((a, b) => a.order - b.order);
+                                        return (
+                                            <div key={step} className={CARD}>
+                                                {/* 단계 헤더 */}
+                                                <div className="flex items-center gap-3 px-6 py-4 bg-gray-50 border-b border-gray-100">
+                                                    <span className="w-9 h-9 rounded-xl bg-gradient-to-br from-accent-500 to-accent-700 text-white flex items-center justify-center text-sm font-bold shadow-md shadow-accent-600/30">{step}</span>
+                                                    <h3 className="text-base font-bold text-gray-900">단계 {step}</h3>
+                                                    <span className="px-2 py-0.5 rounded-md bg-white border border-gray-200 text-xs font-semibold text-gray-500">질문 {stepQuestions.length}개</span>
+                                                </div>
+                                                <div className="divide-y divide-gray-100">
+                                                    {stepQuestions.map((question) => (
+                                                        <div key={question.id} className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 px-6 py-4 hover:bg-accent-50/40 transition-colors">
+                                                            <div className="flex-1 min-w-0">
+                                                                <div className="flex flex-wrap items-center gap-2">
+                                                                    <span className="font-semibold text-gray-900">{question.title}</span>
+                                                                    {question.isRequired && <span className="px-1.5 py-0.5 rounded bg-red-50 text-red-600 text-[11px] font-bold">필수</span>}
+                                                                    {question.questionType && QUESTION_TYPE_LABEL_MAP[question.questionType] && <span className="px-1.5 py-0.5 rounded bg-accent-50 text-accent-700 text-[11px] font-bold">{QUESTION_TYPE_LABEL_MAP[question.questionType]}</span>}
                                                                 </div>
-                                                                <div className="flex gap-2">
-                                                                    <button onClick={() => handleEditQuestion(question)} className="px-3 py-1 text-sm border-2 border-black rounded hover:bg-black hover:text-white transition-all">
-                                                                        수정
-                                                                    </button>
-                                                                    <button onClick={() => handleDeleteQuestion(question.id)} className="px-3 py-1 text-sm border-2 border-red-500 text-red-500 rounded hover:bg-red-500 hover:text-white transition-all">
-                                                                        삭제
-                                                                    </button>
+                                                                {question.description && <div className="text-sm text-gray-500 mt-1">{question.description}</div>}
+                                                                <div className="flex gap-1.5 mt-2">
+                                                                    <span className="px-2 py-0.5 rounded-md bg-gray-100 text-xs font-medium text-gray-500">최소 {question.minLength}자</span>
+                                                                    <span className="px-2 py-0.5 rounded-md bg-gray-100 text-xs font-medium text-gray-500">순서 {question.order}</span>
                                                                 </div>
+                                                            </div>
+                                                            <div className="flex gap-2 shrink-0">
+                                                                <button onClick={() => handleEditQuestion(question)} className={`${PILL} bg-gray-900 text-white hover:bg-accent-600`}>
+                                                                    수정
+                                                                </button>
+                                                                <button onClick={() => handleDeleteQuestion(question.id)} className={`${PILL} bg-red-50 text-red-600 hover:bg-red-600 hover:text-white`}>
+                                                                    삭제
+                                                                </button>
                                                             </div>
                                                         </div>
                                                     ))}
+                                                </div>
                                             </div>
-                                        </div>
-                                    ))}
+                                        );
+                                    })}
                             </div>
                         )}
                     </div>
@@ -1107,15 +1148,27 @@ export default function SuperAdminPage() {
                 {/* Users Tab */}
                 {activeTab === 'users' && (
                     <div>
-                        <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-2xl font-bold text-black">사용자 목록</h2>
-                            <button onClick={() => setShowUserForm(true)} className="px-4 py-2 bg-black text-white rounded-lg font-semibold hover:bg-gray-800 transition-all">
-                                + 새 사용자 생성
-                            </button>
+                        <SectionHeader
+                            icon="users"
+                            title="사용자 관리"
+                            description="계정 생성, 비밀번호 변경, 계정 삭제를 관리합니다"
+                            action={
+                                <button onClick={() => setShowUserForm(true)} className={BTN_PRIMARY}>
+                                    <Icon name="plus" className="w-4 h-4" />새 사용자 생성
+                                </button>
+                            }
+                        />
+
+                        {/* 역할별 요약 */}
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+                            <StatCard label="전체 계정" value={users?.content.length ?? 0} unit="명" tone="dark" />
+                            {USER_ROLE_SECTIONS.filter(({ role, hideWhenEmpty }) => !hideWhenEmpty || users?.content.some((u) => u.role === role)).map(({ role, label }) => (
+                                <StatCard key={role} label={label} value={users?.content.filter((u) => u.role === role).length ?? 0} unit="명" tone={role === 'USER' ? 'accent' : 'green'} />
+                            ))}
                         </div>
 
                         {/* 역할별 구역 */}
-                        <div className="space-y-8 pb-10">
+                        <div className="space-y-12 pb-10">
                             {USER_ROLE_SECTIONS.map(({ role, label, hideWhenEmpty, deletable }) => (
                                 <UserRoleSection
                                     key={role}
@@ -1146,12 +1199,16 @@ export default function SuperAdminPage() {
 
                         {/* 비밀번호 변경 모달 */}
                         {passwordTargetUser && (
-                            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4" onClick={() => setPasswordTargetUser(null)}>
-                                <div className="bg-white rounded-lg p-6 w-full max-w-md border-2 border-black" onClick={(e) => e.stopPropagation()}>
-                                    <h3 className="text-lg font-bold text-black mb-4">비밀번호 변경</h3>
-                                    <p className="text-sm text-gray-600 mb-2">
-                                        대상 계정: <strong>{passwordTargetUser.name}</strong> ({passwordTargetUser.email})
-                                    </p>
+                            <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm flex items-center justify-center z-50 px-4" onClick={() => setPasswordTargetUser(null)}>
+                                <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl" onClick={(e) => e.stopPropagation()}>
+                                    <h3 className="text-lg font-bold text-gray-900 mb-4">비밀번호 변경</h3>
+                                    <div className="flex items-center gap-3 p-3 mb-4 rounded-xl bg-gray-50">
+                                        <span className={`w-9 h-9 shrink-0 rounded-full flex items-center justify-center text-sm font-bold ${passwordTargetUser.role === 'USER' ? 'bg-accent-100 text-accent-700' : 'bg-gray-900 text-white'}`}>{passwordTargetUser.name?.charAt(0)}</span>
+                                        <div className="min-w-0">
+                                            <div className="text-sm font-bold text-gray-900 truncate">{passwordTargetUser.name}</div>
+                                            <div className="text-xs text-gray-500 truncate">{passwordTargetUser.email}</div>
+                                        </div>
+                                    </div>
                                     <input
                                         type="password"
                                         value={newPassword}
@@ -1162,10 +1219,10 @@ export default function SuperAdminPage() {
                                         className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-black"
                                     />
                                     <div className="flex justify-end gap-2">
-                                        <button onClick={() => setPasswordTargetUser(null)} className="px-4 py-2 bg-white text-black border-2 border-black rounded-lg font-semibold hover:bg-black hover:text-white transition-all">
+                                        <button onClick={() => setPasswordTargetUser(null)} className={BTN_SECONDARY}>
                                             취소
                                         </button>
-                                        <button onClick={handleSubmitPasswordChange} className="px-4 py-2 bg-black text-white rounded-lg font-semibold hover:bg-gray-800 transition-all">
+                                        <button onClick={handleSubmitPasswordChange} className={BTN_PRIMARY}>
                                             저장
                                         </button>
                                     </div>
@@ -2148,39 +2205,30 @@ export default function SuperAdminPage() {
 
             {/* Submissions Tab */}
             {activeTab === 'submissions' && (
-                <div className="max-w-7xl mx-auto">
-                    {/* 전체 요약 */}
-                    <div className="bg-white border-2 border-gray-200 rounded-lg p-6 mb-6">
-                        <h3 className="text-lg font-bold text-black mb-3">전체 요약</h3>
-                        <div className="flex gap-6 text-sm text-gray-600">
-                            <span>
-                                전체: <strong className="text-black">{submissions?.length}</strong>건
-                            </span>
-                            <span>
-                                제출완료: <strong className="text-green-600">{submissions?.filter((s) => !s.isDraft).length}</strong>건
-                            </span>
-                            <span>
-                                임시저장: <strong className="text-yellow-600">{submissions?.filter((s) => s.isDraft).length}</strong>건
-                            </span>
-                        </div>
-                    </div>
-                    <div className="flex justify-between items-center mb-6">
-                        <h2 className="text-2xl font-bold">제출 목록</h2>
-                        <div className="flex gap-3">
-                            <button onClick={fetchSubmissions} className="px-4 py-2 border-2 border-black rounded-lg font-semibold hover:bg-black hover:text-white transition-all">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+                    <SectionHeader
+                        icon="document"
+                        title="제출 목록"
+                        description="고객이 작성한 기초자료를 포트폴리오별로 확인합니다"
+                        action={
+                            <button onClick={fetchSubmissions} className={BTN_SECONDARY}>
+                                <Icon name="refresh" className="w-4 h-4" />
                                 새로고침
                             </button>
-                        </div>
+                        }
+                    />
+
+                    {/* 전체 요약 */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
+                        <StatCard label="전체" value={submissions?.length ?? 0} unit="건" tone="dark" />
+                        <StatCard label="제출완료" value={submissions?.filter((s) => !s.isDraft).length ?? 0} unit="건" tone="green" />
+                        <StatCard label="임시저장" value={submissions?.filter((s) => s.isDraft).length ?? 0} unit="건" tone="amber" />
                     </div>
 
                     {submissions?.length === 0 ? (
-                        <div className="bg-white border-2 border-gray-200 rounded-lg p-12 text-center">
-                            <span className="text-6xl mb-4 block">📝</span>
-                            <h3 className="text-xl font-bold text-gray-800 mb-2">제출 내역이 없습니다</h3>
-                            <p className="text-gray-600">사용자가 포트폴리오를 제출하면 여기에 표시됩니다</p>
-                        </div>
+                        <EmptyState icon="document" title="제출 내역이 없습니다" description="사용자가 포트폴리오를 제출하면 여기에 표시됩니다" />
                     ) : (
-                        <div className="space-y-6 pb-10">
+                        <div className="space-y-8">
                             {/* 포트폴리오별로 그룹화 */}
                             {submissions &&
                                 submissions.length > 0 &&
@@ -2200,49 +2248,73 @@ export default function SuperAdminPage() {
                                         groups[key].submissions.push(submission);
                                         return groups;
                                     }, {}),
-                                ).map(([key, group]: [string, any]) => (
-                                    <div key={key} className="bg-white border-2 border-black rounded-lg overflow-hidden">
+                                ).map(([key, group]: [string, any]) => {
+                                    const total = group.submissions.length;
+                                    const done = group.submissions.filter((s: any) => !s.isDraft).length;
+                                    const donePercent = total ? Math.round((done / total) * 100) : 0;
+                                    return (
+                                    <div key={key} className={CARD}>
                                         {/* 포트폴리오 헤더 */}
-                                        <div className="bg-gray-50 px-6 py-4 border-b-2 border-gray-200 flex justify-between items-center">
-                                            <div>
-                                                <h3 className="text-lg font-bold text-black">{group.portfolioTitle}</h3>
-                                                <p className="text-sm text-gray-600">
-                                                    총 {group.submissions.length}건 (완료: {group.submissions.filter((s: any) => !s.isDraft).length}
-                                                    건, 임시저장: {group.submissions.filter((s: any) => s.isDraft).length}
-                                                    건)
-                                                </p>
+                                        <div className="px-6 py-5 border-b border-gray-100 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                                            <div className="flex items-center gap-3 min-w-0">
+                                                <span className="w-1.5 h-10 shrink-0 rounded-full bg-accent-600" />
+                                                <div className="min-w-0">
+                                                    <h3 className="text-lg font-bold text-gray-900 truncate">{group.portfolioTitle}</h3>
+                                                    <div className="flex flex-wrap gap-1.5 mt-1">
+                                                        <span className="px-2 py-0.5 rounded-md bg-gray-100 text-xs font-semibold text-gray-600">총 {total}건</span>
+                                                        <span className="px-2 py-0.5 rounded-md bg-emerald-50 text-xs font-semibold text-emerald-700">완료 {done}</span>
+                                                        <span className="px-2 py-0.5 rounded-md bg-amber-50 text-xs font-semibold text-amber-700">임시저장 {total - done}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            {/* 제출 완료율 */}
+                                            <div className="md:w-56 shrink-0">
+                                                <div className="flex justify-between text-xs font-semibold text-gray-500 mb-1.5">
+                                                    <span>제출 완료율</span>
+                                                    <span className="text-gray-900">{donePercent}%</span>
+                                                </div>
+                                                <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
+                                                    <div className="h-full rounded-full bg-gradient-to-r from-accent-500 to-emerald-500 transition-all" style={{ width: `${donePercent}%` }} />
+                                                </div>
                                             </div>
                                         </div>
 
                                         {/* 제출목록 테이블 */}
                                         <div className="overflow-x-auto">
                                             <table className="w-full">
-                                                <thead className="bg-gray-100 border-b border-gray-200">
+                                                <thead className="bg-gray-50">
                                                     <tr>
-                                                        <th className="px-1 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">상호명</th>
-                                                        <th className="px-1 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">상태</th>
-                                                        <th className="px-1 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">제출일시</th>
-                                                        <th className="px-1 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">작업</th>
+                                                        <th className={TH}>상호명</th>
+                                                        <th className={TH}>상태</th>
+                                                        <th className={TH}>제출일시</th>
+                                                        <th className={`${TH} text-right`}>작업</th>
                                                     </tr>
                                                 </thead>
-                                                <tbody className="divide-y divide-gray-200">
+                                                <tbody className="divide-y divide-gray-100">
                                                     {group.submissions.map((submission: any) => (
-                                                        <tr key={submission.id} className="hover:bg-gray-50">
-                                                            <td className="px-1 md:px-6 py-4 text-sm font-semibold text-black">{submission.companyName}</td>
-                                                            <td className="px-1 md:px-6 py-4 text-sm cursor-pointer">
+                                                        <tr key={submission.id} className="hover:bg-accent-50/40 transition-colors">
+                                                            <td className="px-6 py-4 text-sm font-semibold text-gray-900">{submission.companyName}</td>
+                                                            <td className="px-6 py-4 text-sm whitespace-nowrap">
                                                                 {submission.isDraft ? (
-                                                                    <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-semibold">임시저장</span>
+                                                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 text-amber-700 rounded-full text-xs font-bold">
+                                                                        <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                                                                        임시저장
+                                                                    </span>
                                                                 ) : (
-                                                                    <span onClick={() => submissionOff(submission)} className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold">
+                                                                    <span onClick={() => submissionOff(submission)} title="클릭하면 임시저장으로 되돌립니다" className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 text-emerald-700 rounded-full text-xs font-bold cursor-pointer hover:bg-emerald-100 transition-colors">
+                                                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                                                                         제출완료
                                                                     </span>
                                                                 )}
                                                             </td>
-                                                            <td className="px-1 md:px-6 py-4 text-sm text-gray-900">{new Date(submission.isDraft ? submission.updatedAt : submission.completedAt).toLocaleString('ko-KR')}</td>
-                                                            <td className="px-1 md:px-6 py-4 text-sm">
-                                                                <div className="flex flex-col md:flex-row gap-2">
-                                                                    <button onClick={() => handleDetailSubmission(submission)} className="text-blue-600 hover:text-blue-900 font-semibold">
+                                                            <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">{new Date(submission.isDraft ? submission.updatedAt : submission.completedAt).toLocaleString('ko-KR')}</td>
+                                                            <td className="px-6 py-4 text-sm">
+                                                                <div className="flex flex-col md:flex-row md:justify-end gap-2">
+                                                                    <button onClick={() => handleDetailSubmission(submission)} className={`${PILL} justify-center bg-accent-50 text-accent-700 hover:bg-accent-600 hover:text-white`}>
                                                                         상세보기
+                                                                    </button>
+                                                                    <button onClick={() => downloadExcel(submission)} className={`${PILL} justify-center bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white`}>
+                                                                        엑셀 다운로드
                                                                     </button>
                                                                     <button
                                                                         onClick={async () => {
@@ -2257,12 +2329,9 @@ export default function SuperAdminPage() {
                                                                                 );
                                                                             }
                                                                         }}
-                                                                        className="text-red-600 hover:text-red-900 font-semibold"
+                                                                        className={`${PILL} justify-center bg-red-50 text-red-600 hover:bg-red-600 hover:text-white`}
                                                                     >
                                                                         삭제
-                                                                    </button>
-                                                                    <button onClick={() => downloadExcel(submission)} className="text-green-600 hover:text-green-900 font-semibold">
-                                                                        엑셀 다운로드
                                                                     </button>
                                                                 </div>
                                                             </td>
@@ -2272,7 +2341,8 @@ export default function SuperAdminPage() {
                                             </table>
                                         </div>
                                     </div>
-                                ))}
+                                    );
+                                })}
                         </div>
                     )}
                 </div>
@@ -2280,9 +2350,12 @@ export default function SuperAdminPage() {
 
             {/* Categories Tab */}
             {activeTab === 'categories' && (
-                <div className="max-w-7xl mx-auto">
-                    <div className="flex justify-between items-center mb-6">
-                        <h2 className="text-2xl font-bold">카테고리 관리</h2>
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+                    <SectionHeader
+                        icon="folder"
+                        title="카테고리 관리"
+                        description="포트폴리오를 분류하는 카테고리와 노출 순서를 관리합니다"
+                        action={
                         <button
                             onClick={() => {
                                 setEditingCategory(null);
@@ -2293,44 +2366,47 @@ export default function SuperAdminPage() {
                                 });
                                 setShowCategoryForm(true);
                             }}
-                            className="px-4 py-2 bg-black text-white rounded-lg font-semibold hover:bg-gray-800 transition-all"
+                            className={BTN_PRIMARY}
                         >
-                            + 새 카테고리 추가
+                            <Icon name="plus" className="w-4 h-4" />새 카테고리 추가
                         </button>
-                    </div>
+                        }
+                    />
 
                     {categories?.content?.length === 0 ? (
-                        <div className="bg-white border-2 border-gray-200 rounded-lg p-12 text-center">
-                            <span className="text-6xl mb-4 block">📁</span>
-                            <h3 className="text-xl font-bold text-gray-800 mb-2">카테고리가 없습니다</h3>
-                            <p className="text-gray-600">새 카테고리를 추가하여 포트폴리오를 분류해보세요</p>
-                        </div>
+                        <EmptyState icon="folder" title="카테고리가 없습니다" description="새 카테고리를 추가하여 포트폴리오를 분류해보세요" />
                     ) : (
-                        <div className="bg-white border-2 border-black rounded-lg overflow-hidden">
+                        <div className={CARD}>
                             <div className="overflow-x-auto">
                                 <table className="w-full">
-                                    <thead className="bg-gray-50 border-b-2 border-black">
+                                    <thead className="bg-gray-50">
                                         <tr>
-                                            <th className="px-1 md:px-6 py-4 text-left text-sm font-bold text-black">카테고리명</th>
-                                            <th className="px-1 md:px-6 py-4 text-left text-sm font-bold text-black">슬러그</th>
-                                            <th className="px-1 md:px-6 py-4 text-left text-sm font-bold text-black">순서</th>
-                                            <th className="px-1 md:px-6 py-4 text-left text-sm font-bold text-black">포트폴리오 수</th>
-                                            <th className="px-1 md:px-6 py-4 text-left text-sm font-bold text-black">작업</th>
+                                            <th className={TH}>순서</th>
+                                            <th className={TH}>카테고리명</th>
+                                            <th className={TH}>슬러그</th>
+                                            <th className={TH}>포트폴리오 수</th>
+                                            <th className={`${TH} text-right`}>작업</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-gray-200">
+                                    <tbody className="divide-y divide-gray-100">
                                         {categories?.content?.map((category) => (
-                                            <tr key={category.id} className="hover:bg-gray-50">
-                                                <td className="px-6 py-4 text-sm font-semibold text-black">{category.name}</td>
-                                                <td className="px-6 py-4 text-sm font-mono text-gray-700">{category.slug}</td>
-                                                <td className="px-6 py-4 text-sm text-gray-600">{category.order}</td>
-                                                <td className="px-6 py-4 text-sm text-gray-600">{category.count?.portfolios || 0}개</td>
-                                                <td className="px-6 py-4 text-sm">
-                                                    <div className="flex flex-col md:flex-row gap-2">
-                                                        <button onClick={() => handleEditCategory(category)} className="text-blue-600 font-semibold hover:underline">
+                                            <tr key={category.id} className="hover:bg-accent-50/40 transition-colors">
+                                                <td className="px-6 py-4">
+                                                    <span className="w-8 h-8 rounded-lg bg-gray-900 text-white flex items-center justify-center text-sm font-bold">{category.order}</span>
+                                                </td>
+                                                <td className="px-6 py-4 text-sm font-bold text-gray-900 whitespace-nowrap">{category.name}</td>
+                                                <td className="px-6 py-4">
+                                                    <code className="px-2 py-1 rounded-md bg-gray-100 text-xs text-gray-600">{category.slug}</code>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <span className="px-2.5 py-1 rounded-full bg-accent-50 text-accent-700 text-xs font-bold whitespace-nowrap">{category.count?.portfolios || 0}개</span>
+                                                </td>
+                                                <td className="px-6 py-4 text-right">
+                                                    <div className="inline-flex gap-2">
+                                                        <button onClick={() => handleEditCategory(category)} className={`${PILL} bg-gray-900 text-white hover:bg-accent-600`}>
                                                             수정
                                                         </button>
-                                                        <button onClick={() => handleDeleteCategory(category.id)} className="text-red-600 font-semibold hover:underline">
+                                                        <button onClick={() => handleDeleteCategory(category.id)} className={`${PILL} bg-red-50 text-red-600 hover:bg-red-600 hover:text-white`}>
                                                             삭제
                                                         </button>
                                                     </div>
@@ -2340,9 +2416,11 @@ export default function SuperAdminPage() {
                                     </tbody>
                                 </table>
                             </div>
-                            <div className="my-6">
-                                <Pagination current={page} totalPages={categories?.totalPages ?? 0} onChange={handlePageClick} />
-                            </div>
+                            {(categories?.totalPages ?? 0) > 1 && (
+                                <div className="py-5 border-t border-gray-100">
+                                    <Pagination current={page} totalPages={categories?.totalPages ?? 0} onChange={handlePageClick} />
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>
@@ -2430,17 +2508,15 @@ function PortfolioCategorySection({
 
     return (
         <div>
-            <h3 className="text-lg font-bold text-black mb-3">
-                {label} <span className="text-gray-500 font-semibold">({portfolios.length})</span>
-            </h3>
+            <GroupTitle label={label} count={portfolios.length} />
 
             {portfolios.length === 0 ? (
-                <div className="bg-white border-2 border-gray-200 rounded-lg px-6 py-8 text-center text-sm text-gray-500">등록된 포트폴리오가 없습니다</div>
+                <EmptyState icon="grid" title="등록된 포트폴리오가 없습니다" compact />
             ) : (
                 <>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">{pagePortfolios.map(renderCard)}</div>
                     {totalPages > 1 && (
-                        <div className="my-6">
+                        <div className="mt-8">
                             <Pagination current={currentPage} totalPages={totalPages} onChange={setPage} />
                         </div>
                     )}
@@ -2478,60 +2554,161 @@ function UserRoleSection({
 
     return (
         <div>
-            <h3 className="text-lg font-bold text-black mb-3">
-                {label} <span className="text-gray-500 font-semibold">({users.length})</span>
-            </h3>
+            <GroupTitle label={label} count={users.length} />
 
-            <div className="bg-white border-2 border-black rounded-lg overflow-hidden">
-                {users.length === 0 ? (
-                    <div className="px-6 py-8 text-center text-sm text-gray-500">등록된 사용자가 없습니다</div>
-                ) : (
-                    <>
-                        <div className="overflow-x-auto">
-                        <table className="min-w-full divide-y-2 divide-gray-200">
-                            <thead className="bg-gray-100">
+            {users.length === 0 ? (
+                <EmptyState icon="users" title="등록된 사용자가 없습니다" compact />
+            ) : (
+                <div className={CARD}>
+                    <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-gray-100">
+                            <thead className="bg-gray-50">
                                 <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-bold text-black uppercase tracking-wider">이름</th>
-                                    <th className="px-4 md:px-6 py-3 text-left text-xs font-bold text-black uppercase tracking-wider">계정 아이디</th>
-                                    <th className="px-6 py-3 text-left text-xs font-bold text-black uppercase tracking-wider">생성일</th>
-                                    <th className="px-6 py-3 text-left text-xs font-bold text-black uppercase tracking-wider">마지막 접속</th>
-                                    <th className="px-6 py-3 text-left text-xs font-bold text-black uppercase tracking-wider">작업</th>
+                                    <th className={TH}>이름</th>
+                                    <th className={TH}>계정 아이디</th>
+                                    <th className={TH}>생성일</th>
+                                    <th className={TH}>마지막 접속</th>
+                                    <th className={`${TH} text-right`}>작업</th>
                                 </tr>
                             </thead>
-                            <tbody className="bg-white divide-y divide-gray-200">
+                            <tbody className="divide-y divide-gray-100">
                                 {pageUsers.map((user) => (
-                                    <tr key={user.id} className="hover:bg-gray-50">
+                                    <tr key={user.id} className="hover:bg-accent-50/40 transition-colors">
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm font-medium text-black">{user.name}</div>
+                                            <div className="flex items-center gap-3">
+                                                <span className={`w-9 h-9 shrink-0 rounded-full flex items-center justify-center text-sm font-bold ${user.role === 'USER' ? 'bg-accent-100 text-accent-700' : 'bg-gray-900 text-white'}`}>{user.name?.charAt(0)}</span>
+                                                <span className="text-sm font-semibold text-gray-900">{user.name}</span>
+                                            </div>
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm text-gray-600">{user.email}</div>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{new Date(user.createdAt).toLocaleDateString('ko-KR')}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{formatDateTime(lastLoginMap[String(user.id)])}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold">
-                                            <button onClick={() => onChangePassword(user)} className="text-green-600 hover:text-green-900 mr-4">
-                                                비밀번호 변경
-                                            </button>
-                                            {onDelete && (
-                                                <button onClick={() => onDelete(user)} className="text-red-600 hover:text-red-900">
-                                                    삭제
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{user.email}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(user.createdAt).toLocaleDateString('ko-KR')}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatDateTime(lastLoginMap[String(user.id)])}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-right">
+                                            <div className="inline-flex gap-2">
+                                                <button onClick={() => onChangePassword(user)} className={`${PILL} bg-accent-50 text-accent-700 hover:bg-accent-600 hover:text-white`}>
+                                                    비밀번호 변경
                                                 </button>
-                                            )}
+                                                {onDelete && (
+                                                    <button onClick={() => onDelete(user)} className={`${PILL} bg-red-50 text-red-600 hover:bg-red-600 hover:text-white`}>
+                                                        삭제
+                                                    </button>
+                                                )}
+                                            </div>
                                         </td>
                                     </tr>
                                 ))}
                             </tbody>
                         </table>
+                    </div>
+                    {totalPages > 1 && (
+                        <div className="py-5 border-t border-gray-100">
+                            <Pagination current={currentPage} totalPages={totalPages} onChange={setPage} />
                         </div>
-                        {totalPages > 1 && (
-                            <div className="my-6">
-                                <Pagination current={currentPage} totalPages={totalPages} onChange={setPage} />
-                            </div>
-                        )}
-                    </>
-                )}
+                    )}
+                </div>
+            )}
+        </div>
+    );
+}
+
+/* ---------------------------------------------------------------------------
+ * 관리자 페이지 공통 UI
+ * ------------------------------------------------------------------------- */
+
+//공통 스타일
+const CARD = 'bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden';
+const TH = 'px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap';
+const PILL = 'inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap';
+const BTN_PRIMARY = 'inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gray-900 text-white text-sm font-semibold shadow-sm hover:bg-accent-600 hover:shadow-lg hover:shadow-accent-600/30 transition-all disabled:opacity-40 disabled:cursor-not-allowed';
+const BTN_SECONDARY = 'inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-gray-200 text-gray-700 text-sm font-semibold shadow-sm hover:border-gray-900 hover:text-gray-900 transition-all';
+
+//아이콘 (heroicons outline)
+const ICON_PATHS = {
+    grid: 'M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z',
+    question: 'M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z',
+    users: 'M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z',
+    document: 'M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z',
+    folder: 'M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z',
+    plus: 'M12 4.5v15m7.5-7.5h-15',
+    search: 'M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z',
+    refresh: 'M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99',
+    home: 'M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25',
+    logout: 'M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75',
+    photo: 'M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z',
+};
+type IconName = keyof typeof ICON_PATHS;
+
+function Icon({ name, className = 'w-5 h-5' }: { name: IconName; className?: string }) {
+    return (
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className={className} aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" d={ICON_PATHS[name]} />
+        </svg>
+    );
+}
+
+//탭 상단 제목 영역
+function SectionHeader({ icon, title, description, action }: { icon: IconName; title: string; description?: ReactNode; action?: ReactNode }) {
+    return (
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+            <div className="flex items-center gap-4">
+                <div className="w-12 h-12 shrink-0 rounded-2xl bg-gradient-to-br from-accent-500 to-accent-700 text-white flex items-center justify-center shadow-lg shadow-accent-600/30">
+                    <Icon name={icon} className="w-6 h-6" />
+                </div>
+                <div>
+                    <h2 className="text-2xl font-bold text-gray-900 tracking-tight">{title}</h2>
+                    {description && <p className="text-sm text-gray-500 mt-0.5">{description}</p>}
+                </div>
             </div>
+            {action && <div className="flex flex-wrap gap-2">{action}</div>}
+        </div>
+    );
+}
+
+//구역 제목 (카테고리 / 역할 등)
+function GroupTitle({ label, count }: { label: string; count: number }) {
+    return (
+        <div className="flex items-center gap-3 mb-4">
+            <span className="w-1.5 h-5 rounded-full bg-accent-600" />
+            <h3 className="text-lg font-bold text-gray-900">{label}</h3>
+            <span className="px-2.5 py-0.5 rounded-full bg-accent-50 text-accent-700 text-xs font-bold">{count}</span>
+            <div className="flex-1 h-px bg-gray-200" />
+        </div>
+    );
+}
+
+//요약 숫자 카드
+const STAT_TONES = {
+    dark: { box: 'bg-gray-900 text-white', label: 'text-gray-400', dot: 'bg-white' },
+    accent: { box: 'bg-white border border-gray-200', label: 'text-gray-500', dot: 'bg-accent-500' },
+    green: { box: 'bg-white border border-gray-200', label: 'text-gray-500', dot: 'bg-emerald-500' },
+    amber: { box: 'bg-white border border-gray-200', label: 'text-gray-500', dot: 'bg-amber-400' },
+};
+
+function StatCard({ label, value, unit, tone = 'accent' }: { label: string; value: number; unit?: string; tone?: keyof typeof STAT_TONES }) {
+    const t = STAT_TONES[tone];
+    return (
+        <div className={`rounded-2xl p-5 shadow-sm ${t.box}`}>
+            <div className={`flex items-center gap-2 text-sm font-medium ${t.label}`}>
+                <span className={`w-2 h-2 rounded-full ${t.dot}`} />
+                {label}
+            </div>
+            <div className="mt-2 text-3xl font-bold tracking-tight">
+                {value.toLocaleString()}
+                {unit && <span className={`ml-1 text-base font-semibold ${t.label}`}>{unit}</span>}
+            </div>
+        </div>
+    );
+}
+
+//빈 목록 안내
+function EmptyState({ icon, title, description, compact = false }: { icon: IconName; title: string; description?: string; compact?: boolean }) {
+    return (
+        <div className={`bg-white rounded-2xl border-2 border-dashed border-gray-200 text-center ${compact ? 'px-6 py-8' : 'px-6 py-16'}`}>
+            <div className={`mx-auto rounded-2xl bg-gray-100 text-gray-400 flex items-center justify-center ${compact ? 'w-10 h-10 mb-3' : 'w-14 h-14 mb-4'}`}>
+                <Icon name={icon} className={compact ? 'w-5 h-5' : 'w-7 h-7'} />
+            </div>
+            <h3 className={`font-bold text-gray-700 ${compact ? 'text-sm' : 'text-lg'}`}>{title}</h3>
+            {description && <p className="text-sm text-gray-500 mt-1">{description}</p>}
         </div>
     );
 }
