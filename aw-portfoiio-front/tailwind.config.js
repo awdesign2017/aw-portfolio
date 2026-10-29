@@ -6,15 +6,6 @@ module.exports = {
             colors: {
                 primary: '#000000',
                 secondary: '#ffffff',
-                //관리자 페이지 포인트 색 (여기만 바꾸면 전체 반영)
-                accent: {
-                    50: '#eef2ff',
-                    100: '#e0e7ff',
-                    200: '#c7d2fe',
-                    500: '#6366f1',
-                    600: '#4f46e5',
-                    700: '#4338ca',
-                },
                 gray: {
                     50: '#fafafa',
                     100: '#f5f5f5',
