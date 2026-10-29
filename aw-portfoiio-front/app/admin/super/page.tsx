@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
 import { userState } from '@/store/user';
@@ -50,6 +50,8 @@ const USER_ROLE_SECTIONS = [
 ];
 //사용자 목록 구역별 페이지당 표시 수
 const USER_PAGE_SIZE = 20;
+//포트폴리오 목록 카테고리별 페이지당 표시 수
+const PORTFOLIO_PAGE_SIZE = 12;
 
 //비밀번호 변경 규칙 (일반 회원: 숫자 4~8자리 / 관리자: 제한 없음) - 통과 시 null, 실패 시 안내 문구
 const validateNewPassword = (role: string, password: string): string | null => {
@@ -83,6 +85,8 @@ export default function SuperAdminPage() {
     const [searchName, setSearchName] = useState('');
     //포토폴리오 카테고리 목록
     const [selectCategory, setSelectCategory] = useState<CategorySelect[]>();
+    //포트폴리오 카테고리 탭 ('all' 또는 카테고리 ID)
+    const [portfolioCategoryTab, setPortfolioCategoryTab] = useState<string>('all');
     //전체 포토폴리오
     const [allPortfolios, setAllPortfolios] = useState<PortfolioContent[]>();
 
@@ -230,7 +234,8 @@ export default function SuperAdminPage() {
     //포트폴리오 탭
     const fetchPortfolios = async () => {
         await request(
-            () => PortfolioService.get({ page: page, size: 6, name: searchName }),
+            //카테고리별로 나누기 위해 전체 조회 후 카테고리별로 페이지 처리
+            () => PortfolioService.get({ page: 0, size: 1000, name: searchName }),
             (res) => {
                 setPortfolios(res.data);
                 //카테고리 select 목록
@@ -245,6 +250,50 @@ export default function SuperAdminPage() {
             { ignoreErrorRedirect: true },
         );
     };
+
+    //포트폴리오 카드 (카테고리별 구역에서 사용)
+    const renderPortfolioCard = (portfolio: PortfolioContent) => (
+        <div key={portfolio.id} className="bg-white border-2 border-black rounded-lg overflow-hidden">
+            {portfolio.thumbnail && (
+                <div className="w-full bg-gray-200">
+                    <img src={portfolio.thumbnail} alt={portfolio.title} className="w-full h-full" />
+                </div>
+            )}
+            <div className="p-6">
+                <div className="flex justify-between items-start mb-4">
+                    <div className="flex-1">
+                        <h3 className="text-xl font-bold text-black">{portfolio.title}</h3>
+                        <div className="flex items-center gap-2 mt-1">
+                            {portfolio.category && <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">{portfolio.category.name}</span>}
+                            {!portfolio.isActive && <span className="text-xs bg-gray-200 px-2 py-1 rounded">비활성</span>}
+                        </div>
+                    </div>
+                </div>
+                {portfolio.description && <p className="text-gray-600 mb-4">{portfolio.description}</p>}
+                <div className="text-sm text-gray-500 mb-4">
+                    <div>슬러그: {portfolio.slug}</div>
+                    <div>순서: {portfolio.order}</div>
+                    {portfolio.count && (
+                        <>
+                            <div>질문: {portfolio.count.questions}개</div>
+                            <div>제출: {portfolio.count.submissions}개</div>
+                        </>
+                    )}
+                </div>
+                <div className="flex gap-2">
+                    <button onClick={() => handleEditPortfolio(portfolio)} className="flex-1 px-3 py-2 text-sm border-2 border-black rounded hover:bg-black hover:text-white transition-all">
+                        수정
+                    </button>
+                    <button onClick={() => handleDeletePortfolio(portfolio.id)} className="flex-1 px-3 py-2 text-sm border-2 border-red-500 text-red-500 rounded hover:bg-red-500 hover:text-white transition-all">
+                        삭제
+                    </button>
+                    <button onClick={() => handleCopyPortfolio(portfolio.id)} className="flex-1 px-3 py-2 text-sm border-2 border-green-500 text-green-500 rounded hover:bg-green-500 hover:text-white transition-all">
+                        복제
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
 
     //전체 포트폴리오
     const fetchAllPortfolios = async () => {
@@ -918,52 +967,49 @@ export default function SuperAdminPage() {
                             </button>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {portfolios?.content?.map((portfolio) => (
-                                <div key={portfolio.id} className="bg-white border-2 border-black rounded-lg overflow-hidden">
-                                    {portfolio.thumbnail && (
-                                        <div className="w-full bg-gray-200">
-                                            <img src={portfolio.thumbnail} alt={portfolio.title} className="w-full h-full" />
-                                        </div>
-                                    )}
-                                    <div className="p-6">
-                                        <div className="flex justify-between items-start mb-4">
-                                            <div className="flex-1">
-                                                <h3 className="text-xl font-bold text-black">{portfolio.title}</h3>
-                                                <div className="flex items-center gap-2 mt-1">
-                                                    {portfolio.category && <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">{portfolio.category.name}</span>}
-                                                    {!portfolio.isActive && <span className="text-xs bg-gray-200 px-2 py-1 rounded">비활성</span>}
-                                                </div>
-                                            </div>
-                                        </div>
-                                        {portfolio.description && <p className="text-gray-600 mb-4">{portfolio.description}</p>}
-                                        <div className="text-sm text-gray-500 mb-4">
-                                            <div>슬러그: {portfolio.slug}</div>
-                                            <div>순서: {portfolio.order}</div>
-                                            {portfolio.count && (
-                                                <>
-                                                    <div>질문: {portfolio.count.questions}개</div>
-                                                    <div>제출: {portfolio.count.submissions}개</div>
-                                                </>
-                                            )}
-                                        </div>
-                                        <div className="flex gap-2">
-                                            <button onClick={() => handleEditPortfolio(portfolio)} className="flex-1 px-3 py-2 text-sm border-2 border-black rounded hover:bg-black hover:text-white transition-all">
-                                                수정
-                                            </button>
-                                            <button onClick={() => handleDeletePortfolio(portfolio.id)} className="flex-1 px-3 py-2 text-sm border-2 border-red-500 text-red-500 rounded hover:bg-red-500 hover:text-white transition-all">
-                                                삭제
-                                            </button>
-                                            <button onClick={() => handleCopyPortfolio(portfolio.id)} className="flex-1 px-3 py-2 text-sm border-2 border-green-500 text-green-500 rounded hover:bg-green-500 hover:text-white transition-all">
-                                                복제
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
+                        {/* 카테고리 탭 */}
+                        <div className="mb-8 flex flex-wrap gap-2">
+                            {[{ id: 'all', name: '전체' }, ...(selectCategory ?? [])].map((category) => {
+                                const id = String(category.id);
+                                const count = id === 'all' ? (portfolios?.content?.length ?? 0) : (portfolios?.content?.filter((p) => String(p.categoryId) === id).length ?? 0);
+                                return (
+                                    <button
+                                        key={id}
+                                        onClick={() => setPortfolioCategoryTab(id)}
+                                        className={`px-4 py-2 rounded-full border-2 text-sm font-semibold transition-all ${portfolioCategoryTab === id ? 'bg-black border-black text-white' : 'bg-white border-gray-300 text-gray-600 hover:border-black hover:text-black'}`}
+                                    >
+                                        {category.name} <span className={portfolioCategoryTab === id ? 'text-gray-300' : 'text-gray-400'}>{count}</span>
+                                    </button>
+                                );
+                            })}
                         </div>
-                        <div className="my-6">
-                            <Pagination current={page} totalPages={portfolios?.totalPages ?? 0} onChange={handlePageClick} />
+
+                        {/* 카테고리별 구역 */}
+                        <div className="space-y-10 pb-10">
+                            {(selectCategory ?? [])
+                                .filter((category) => portfolioCategoryTab === 'all' || String(category.id) === portfolioCategoryTab)
+                                .map((category) => (
+                                    <PortfolioCategorySection
+                                        key={`${portfolioCategoryTab}-${category.id}`}
+                                        label={category.name}
+                                        portfolios={portfolios?.content?.filter((p) => String(p.categoryId) === String(category.id)) ?? []}
+                                        //전체 보기에서는 빈 카테고리 숨김
+                                        hideWhenEmpty={portfolioCategoryTab === 'all'}
+                                        renderCard={renderPortfolioCard}
+                                    />
+                                ))}
+                            {/* 카테고리가 없거나 삭제된 카테고리의 포트폴리오 */}
+                            {portfolioCategoryTab === 'all' && (
+                                <PortfolioCategorySection
+                                    label="미분류"
+                                    portfolios={portfolios?.content?.filter((p) => !(selectCategory ?? []).some((c) => String(c.id) === String(p.categoryId))) ?? []}
+                                    hideWhenEmpty
+                                    renderCard={renderPortfolioCard}
+                                />
+                            )}
+                            {portfolioCategoryTab === 'all' && portfolios?.content?.length === 0 && (
+                                <div className="bg-white border-2 border-gray-200 rounded-lg p-12 text-center text-gray-500">{searchName ? '검색 결과가 없습니다' : '등록된 포트폴리오가 없습니다'}</div>
+                            )}
                         </div>
                     </div>
                 )}
@@ -2356,6 +2402,49 @@ export default function SuperAdminPage() {
                         </form>
                     </div>
                 </div>
+            )}
+        </div>
+    );
+}
+
+//포트폴리오 목록 > 카테고리별 구역 (구역마다 페이지 따로 관리)
+function PortfolioCategorySection({
+    label,
+    portfolios,
+    hideWhenEmpty = false,
+    renderCard,
+}: {
+    label: string;
+    portfolios: PortfolioContent[];
+    hideWhenEmpty?: boolean;
+    renderCard: (portfolio: PortfolioContent) => ReactNode;
+}) {
+    const [page, setPage] = useState(0);
+
+    const totalPages = Math.ceil(portfolios.length / PORTFOLIO_PAGE_SIZE);
+    //목록이 줄어 현재 페이지가 범위를 벗어나면 마지막 페이지로
+    const currentPage = Math.min(page, Math.max(totalPages - 1, 0));
+    const pagePortfolios = portfolios.slice(currentPage * PORTFOLIO_PAGE_SIZE, (currentPage + 1) * PORTFOLIO_PAGE_SIZE);
+
+    if (hideWhenEmpty && portfolios.length === 0) return null;
+
+    return (
+        <div>
+            <h3 className="text-lg font-bold text-black mb-3">
+                {label} <span className="text-gray-500 font-semibold">({portfolios.length})</span>
+            </h3>
+
+            {portfolios.length === 0 ? (
+                <div className="bg-white border-2 border-gray-200 rounded-lg px-6 py-8 text-center text-sm text-gray-500">등록된 포트폴리오가 없습니다</div>
+            ) : (
+                <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">{pagePortfolios.map(renderCard)}</div>
+                    {totalPages > 1 && (
+                        <div className="my-6">
+                            <Pagination current={currentPage} totalPages={totalPages} onChange={setPage} />
+                        </div>
+                    )}
+                </>
             )}
         </div>
     );
