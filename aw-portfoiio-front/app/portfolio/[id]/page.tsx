@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import DynamicFormField from '@/components/DynamicFormField';
+import RoomCard, { Room, createEmptyRoom } from '@/components/RoomCard';
 import { useRecoilValue } from 'recoil';
 import { userState } from '@/store/user';
 import { PortfolioService } from '@/services/portfolios.service';
@@ -153,31 +154,9 @@ export default function PortfolioForm() {
     const [errors, setErrors] = useState<FormData>({});
 
     // 객실
-    const [rooms, setRooms] = useState<
-        Array<{
-            id: string;
-            name: string;
-            desc: string;
-            capacity: { standard: string; max: string }; // 인원
-            type: string;
-            amenities: string;
-            priceLow: { weekday: string; fri: string; sat: string; sun: string }; // 비수기
-            priceMid: { weekday: string; fri: string; sat: string; sun: string }; // 준성수기
-            priceHigh: { weekday: string; fri: string; sat: string; sun: string }; // 성수기
-        }>
-    >([
-        {
-            id: 'room-1',
-            name: '',
-            desc: '',
-            capacity: { standard: '', max: '' },
-            type: '',
-            amenities: '',
-            priceLow: { weekday: '', fri: '', sat: '', sun: '' },
-            priceMid: { weekday: '', fri: '', sat: '', sun: '' },
-            priceHigh: { weekday: '', fri: '', sat: '', sun: '' },
-        },
-    ]);
+    const [rooms, setRooms] = useState<Room[]>([createEmptyRoom('room-1')]);
+    //방금 추가·복사한 객실 (펼친 상태로 표시)
+    const [justAddedRoomId, setJustAddedRoomId] = useState<string | null>(null);
 
     // 스페셜
     const [specials, setSpecials] = useState<Array<{ id: string; name: string; desc: string }>>([{ id: 'special-1', name: '', desc: '' }]);
@@ -967,37 +946,28 @@ export default function PortfolioForm() {
 
     // 객실 추가
     const handleAddRoom = () => {
+        const newId = `room-${Date.now()}`;
         setRooms((prev) => {
             // 마지막 객실의 데이터를 가져옴
             const lastRoom = prev[prev.length - 1];
 
-            if (lastRoom) {
-                // 마지막 객실의 모든 정보 복사 (일부만 입력되어 있어도 복사)
-                return [
-                    ...prev,
-                    {
-                        ...lastRoom,
-                        id: `room-${Date.now()}`, // ID만 새로 생성
-                    },
-                ];
-            } else {
-                // 첫 객실인 경우 빈 객실 추가
-                return [
-                    ...prev,
-                    {
-                        id: `room-${Date.now()}`,
-                        name: '',
-                        desc: '',
-                        capacity: { standard: '', max: '' },
-                        type: '',
-                        amenities: '',
-                        priceLow: { weekday: '', fri: '', sat: '', sun: '' },
-                        priceMid: { weekday: '', fri: '', sat: '', sun: '' },
-                        priceHigh: { weekday: '', fri: '', sat: '', sun: '' },
-                    },
-                ];
-            }
+            // 마지막 객실의 모든 정보 복사 (일부만 입력되어 있어도 복사), 첫 객실이면 빈 객실
+            return [...prev, lastRoom ? { ...lastRoom, id: newId } : createEmptyRoom(newId)];
         });
+        setJustAddedRoomId(newId);
+    };
+
+    // 객실 복사 (해당 객실 바로 아래에 추가)
+    const handleDuplicateRoom = (id: string) => {
+        const newId = `room-${Date.now()}`;
+        setRooms((prev) => {
+            const index = prev.findIndex((room) => room.id === id);
+            if (index < 0) return prev;
+            const source = prev[index];
+            const copy = { ...source, id: newId, name: source.name ? `${source.name} (복사)` : '' };
+            return [...prev.slice(0, index + 1), copy, ...prev.slice(index + 1)];
+        });
+        setJustAddedRoomId(newId);
     };
 
     // 객실 삭제
@@ -1405,210 +1375,20 @@ export default function PortfolioForm() {
                                                 {rooms.length === 0 && <p className="text-gray-500 text-sm">아직 등록된 객실이 없습니다. “객실 추가”를 눌러주세요.</p>}
 
                                                 {rooms.map((room, index) => (
-                                                    <div key={room.id} className="p-4 border rounded-lg space-y-4 relative">
-                                                        {rooms.length > 1 && (
-                                                            <button type="button" onClick={() => handleRemoveRoom(room.id)} className="absolute top-3 right-3 text-xs bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600">
-                                                                삭제
-                                                            </button>
-                                                        )}
-
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="inline-flex w-7 h-7 items-center justify-center rounded-full bg-black text-white text-xs">{index + 1}</span>
-                                                            <p className="text-sm text-gray-700">객실 {index + 1}</p>
-                                                        </div>
-
-                                                        <div>
-                                                            <label className="block font-semibold mb-1">객실명</label>
-                                                            <p className="text-xs text-gray-500 mb-1">홈페이지 및 예약 페이지에 노출될 객실 이름을 입력해 주세요.</p>
-                                                            <input
-                                                                type="text"
-                                                                value={room.name}
-                                                                disabled={isDetailMode}
-                                                                onChange={(e) => {
-                                                                    const updated = rooms.map((r) => (r.id === room.id ? { ...r, name: e.target.value } : r));
-                                                                    setRooms(updated);
-                                                                }}
-                                                                className="w-full border border-gray-300 rounded-lg p-2"
-                                                                placeholder="예: 달빛방, 스테이 101호, 온돌 독채"
-                                                            />
-                                                        </div>
-
-                                                        <div>
-                                                            <label className="block font-semibold mb-1">객실 설명</label>
-                                                            <p className="text-xs text-gray-500 mb-1">객실의 분위기, 주요 특징, 보이는 풍경, 제공되는 서비스 등을 자유롭게 작성해 주세요.</p>
-                                                            <textarea
-                                                                value={room.desc}
-                                                                disabled={isDetailMode}
-                                                                onChange={(e) => {
-                                                                    const updated = rooms.map((r) => (r.id === room.id ? { ...r, desc: e.target.value } : r));
-                                                                    setRooms(updated);
-                                                                }}
-                                                                className="w-full border border-gray-300 rounded-lg p-2"
-                                                                rows={3}
-                                                                placeholder="예: 따뜻한 우드 톤의 인테리어와 넓은 통창으로 숲 전망을 즐길 수 있으며, 프라이빗 바비큐와 조식 서비스가 제공됩니다."
-                                                            />
-                                                        </div>
-
-                                                        <div>
-                                                            <label className="block font-semibold mb-1">객실 인원</label>
-                                                            <p className="text-xs text-gray-500 mb-1">해당 객실의 수용 인원을 입력해 주세요.</p>
-                                                            <div className="grid grid-cols-2 gap-4">
-                                                                <input
-                                                                    type="number"
-                                                                    min="1"
-                                                                    value={room.capacity.standard}
-                                                                    disabled={isDetailMode}
-                                                                    onKeyDown={(e) => {
-                                                                        if (e.key === '-' || e.key === 'e' || e.key === 'E' || e.key === '+' || e.key === '.') {
-                                                                            e.preventDefault();
-                                                                        }
-                                                                    }}
-                                                                    onChange={(e) => {
-                                                                        const value = e.target.value;
-                                                                        if (value === '' || (parseInt(value) > 0 && !isNaN(parseInt(value)))) {
-                                                                            const updated = rooms.map((r) =>
-                                                                                r.id === room.id
-                                                                                    ? {
-                                                                                          ...r,
-                                                                                          capacity: {
-                                                                                              ...r.capacity,
-                                                                                              standard: value,
-                                                                                          },
-                                                                                      }
-                                                                                    : r
-                                                                            );
-                                                                            setRooms(updated);
-                                                                        }
-                                                                    }}
-                                                                    className="w-full border border-gray-300 rounded-lg p-2"
-                                                                    placeholder="기준"
-                                                                />
-                                                                <input
-                                                                    type="number"
-                                                                    min="1"
-                                                                    value={room.capacity.max}
-                                                                    disabled={isDetailMode}
-                                                                    onKeyDown={(e) => {
-                                                                        if (e.key === '-' || e.key === 'e' || e.key === 'E' || e.key === '+' || e.key === '.') {
-                                                                            e.preventDefault();
-                                                                        }
-                                                                    }}
-                                                                    onChange={(e) => {
-                                                                        const value = e.target.value;
-                                                                        if (value === '' || (parseInt(value) > 0 && !isNaN(parseInt(value)))) {
-                                                                            const updated = rooms.map((r) =>
-                                                                                r.id === room.id
-                                                                                    ? {
-                                                                                          ...r,
-                                                                                          capacity: {
-                                                                                              ...r.capacity,
-                                                                                              max: value,
-                                                                                          },
-                                                                                      }
-                                                                                    : r
-                                                                            );
-                                                                            setRooms(updated);
-                                                                        }
-                                                                    }}
-                                                                    className="w-full border border-gray-300 rounded-lg p-2"
-                                                                    placeholder="최대"
-                                                                />
-                                                            </div>                                                         
-                                                        </div>
-
-                                                        <div>
-                                                            <label className="block font-semibold mb-1">객실 형태</label>
-                                                            <p className="text-xs text-gray-500 mb-1">객실의 구조를 간단히 적어주세요.</p>
-                                                            <input
-                                                                type="text"
-                                                                value={room.type}
-                                                                disabled={isDetailMode}
-                                                                onChange={(e) => {
-                                                                    const updated = rooms.map((r) => (r.id === room.id ? { ...r, type: e.target.value } : r));
-                                                                    setRooms(updated);
-                                                                }}
-                                                                className="w-full border border-gray-300 rounded-lg p-2"
-                                                                placeholder="예: 독채형, 복층 구조, 침실 분리형, 원룸형 등"
-                                                            />
-                                                        </div>
-
-                                                        <div>
-                                                            <label className="block font-semibold mb-1">객실 비품</label>
-                                                            <p className="text-xs text-gray-500 mb-1">해당 객실에서 이용 가능한 비품 목록을 작성해 주세요.</p>
-                                                            <textarea
-                                                                value={room.amenities}
-                                                                disabled={isDetailMode}
-                                                                onChange={(e) => {
-                                                                    const updated = rooms.map((r) => (r.id === room.id ? { ...r, amenities: e.target.value } : r));
-                                                                    setRooms(updated);
-                                                                }}
-                                                                className="w-full border border-gray-300 rounded-lg p-2"
-                                                                rows={3}
-                                                                placeholder="예: TV, 에어컨, 냉장고, 전기포트, 헤어드라이어 등 "
-                                                            />
-                                                        </div>
-
-                                                        <div>
-                                                            <label className="block font-semibold mb-1">요금</label>
-                                                            {[
-                                                                { label: '비수기', key: 'priceLow' },
-                                                                { label: '준성수기', key: 'priceMid' },
-                                                                { label: '성수기', key: 'priceHigh' },
-                                                            ].map(({ label, key }) => (
-                                                                <div key={key}>
-                                                                    <p className="text-xs text-gray-500 mb-1">{label}</p>
-                                                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                                                                        {['weekday', 'fri', 'sat', 'sun'].map((dayKey) => {
-                                                                            const rawValue = (room as any)[key][dayKey];
-                                                                            // 천 단위 콤마 포맷팅 함수
-                                                                            const formatNumber = (value: string | number) => {
-                                                                                if (!value) return '';
-                                                                                const numStr = value.toString().replace(/,/g, '');
-                                                                                if (numStr === '' || isNaN(Number(numStr))) return '';
-                                                                                return numStr.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-                                                                            };
-
-                                                                            return (
-                                                                                <input
-                                                                                    key={dayKey}
-                                                                                    type="text"
-                                                                                    inputMode="numeric"
-                                                                                    pattern="[0-9]*"
-                                                                                    disabled={isDetailMode}
-                                                                                    value={formatNumber(rawValue)}
-                                                                                    onChange={(e) => {
-                                                                                        // 콤마 제거하고 숫자만 추출
-                                                                                        const inputValue = e.target.value.replace(/,/g, '');
-                                                                                        // 숫자만 허용
-                                                                                        if (inputValue !== '' && !/^\d+$/.test(inputValue)) {
-                                                                                            return;
-                                                                                        }
-
-                                                                                        const updatedRooms = rooms.map((r) =>
-                                                                                            r.id === room.id
-                                                                                                ? {
-                                                                                                      ...r,
-                                                                                                      [key]: {
-                                                                                                          ...(r as any)[key],
-                                                                                                          [dayKey]: inputValue,
-                                                                                                      },
-                                                                                                  }
-                                                                                                : r
-                                                                                        );
-                                                                                        setRooms(updatedRooms);
-                                                                                    }}
-                                                                                    className="w-full border border-gray-300 rounded-lg p-2"
-                                                                                    placeholder={dayKey === 'weekday' ? '주중' : dayKey === 'fri' ? '금' : dayKey === 'sat' ? '토' : '일'}
-                                                                                />
-                                                                            );
-                                                                        })}
-                                                                    </div>
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    </div>
+                                                    <RoomCard
+                                                        key={room.id}
+                                                        room={room}
+                                                        index={index}
+                                                        readOnly={isDetailMode}
+                                                        canRemove={rooms.length > 1}
+                                                        //상세보기는 모두 펼침, 방금 추가·복사한 객실은 펼침, 그 외에는 미완성 객실만 펼침
+                                                        defaultOpen={isDetailMode || room.id === justAddedRoomId ? true : undefined}
+                                                        onChange={(updated) => setRooms((prev) => prev.map((r) => (r.id === updated.id ? updated : r)))}
+                                                        onRemove={() => handleRemoveRoom(room.id)}
+                                                        onDuplicate={() => handleDuplicateRoom(room.id)}
+                                                    />
                                                 ))}
-                                                <p className="text-gray-500 text-sm">여러 객실이 있는 경우, [+객실 추가] 버튼을 눌러 동일한 방식으로 입력해 주세요.</p>
+                                                {!isDetailMode && <p className="text-gray-500 text-sm">[+ 객실 추가]를 누르면 마지막 객실 내용이 복사되어 추가됩니다. 특정 객실을 바탕으로 만들려면 해당 객실의 [복사]를 눌러주세요.</p>}
                                                 {!isDetailMode && (
                                                     <button type="button" onClick={handleAddRoom} className="px-4 py-2 bg-gray-100 border-2 border-black rounded-lg text-sm font-semibold hover:bg-black hover:text-white transition-all">
                                                         + 객실 추가
