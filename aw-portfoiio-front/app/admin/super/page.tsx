@@ -215,6 +215,26 @@ export default function SuperAdminPage() {
         );
     };
 
+    //사용자 역할 변경
+    const handleChangeUserRole = async (user: UserContent, role: string) => {
+        if (role === user.role) return;
+
+        const roleLabel = (r: string) => USER_ROLE_SECTIONS.find((s) => s.role === r)?.label ?? r;
+        const notice = role === 'USER' ? '\n\n※ 숙소 사장님 로그인 화면은 숫자 4~8자리 비밀번호만 입력할 수 있습니다. 필요하면 비밀번호도 함께 변경해주세요.' : '';
+        if (!confirm(`'${user.name}' 계정의 역할을 '${roleLabel(user.role)}' → '${roleLabel(role)}'(으)로 변경하시겠습니까?\n\n변경된 권한은 해당 사용자가 다시 로그인하면 적용됩니다.${notice}`)) {
+            return;
+        }
+
+        await request(
+            () => UserService.putRole(user.id, role),
+            () => {
+                alert('역할이 변경되었습니다.');
+                fetchUsers();
+            },
+            { ignoreErrorRedirect: true },
+        );
+    };
+
     //사용자 계정 삭제 (제출 내역·업로드 파일까지 함께 삭제됨)
     const handleDeleteUser = async (user: UserContent) => {
         if (!confirm(`'${user.name}' 계정을 삭제하시겠습니까?\n\n이 계정의 제출 내역과 업로드 파일도 모두 함께 삭제되며, 되돌릴 수 없습니다.`)) {
@@ -1140,6 +1160,8 @@ export default function SuperAdminPage() {
                                         setNewPassword('');
                                     }}
                                     onDelete={deletable ? handleDeleteUser : undefined}
+                                    loginUserId={currentUser?.id}
+                                    onChangeRole={handleChangeUserRole}
                                 />
                             ))}
                             {/* 위 역할에 해당하지 않는 사용자 */}
@@ -1153,6 +1175,8 @@ export default function SuperAdminPage() {
                                     setNewPassword('');
                                 }}
                                 onDelete={handleDeleteUser}
+                                loginUserId={currentUser?.id}
+                                onChangeRole={handleChangeUserRole}
                             />
                         </div>
 
@@ -2459,6 +2483,8 @@ function UserRoleSection({
     hideWhenEmpty = false,
     onChangePassword,
     onDelete,
+    loginUserId,
+    onChangeRole,
 }: {
     label: string;
     users: UserContent[];
@@ -2467,6 +2493,9 @@ function UserRoleSection({
     onChangePassword: (user: UserContent) => void;
     //없으면 삭제 버튼 숨김
     onDelete?: (user: UserContent) => void;
+    //로그인한 본인 계정은 역할 변경 불가
+    loginUserId?: string;
+    onChangeRole: (user: UserContent, role: string) => void;
 }) {
     const [page, setPage] = useState(0);
 
@@ -2491,6 +2520,7 @@ function UserRoleSection({
                                 <tr>
                                     <th className={TH}>이름</th>
                                     <th className={TH}>계정 아이디</th>
+                                    <th className={TH}>역할</th>
                                     <th className={TH}>생성일</th>
                                     <th className={TH}>마지막 접속</th>
                                     <th className={`${TH} text-right`}>작업</th>
@@ -2501,6 +2531,29 @@ function UserRoleSection({
                                     <tr key={user.id} className="hover:bg-gray-50 transition-colors">
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">{user.name}</td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{user.email}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                            {String(user.id) === String(loginUserId) ? (
+                                                <span className="text-gray-400">본인 계정</span>
+                                            ) : (
+                                                <select
+                                                    value={user.role}
+                                                    onChange={(e) => onChangeRole(user, e.target.value)}
+                                                    className="px-2.5 py-1.5 rounded-lg border border-gray-200 bg-white text-sm text-gray-700 hover:border-gray-400 focus:outline-none focus:border-gray-900 transition-colors cursor-pointer"
+                                                >
+                                                    {USER_ROLE_SECTIONS.map((s) => (
+                                                        <option key={s.role} value={s.role}>
+                                                            {s.label}
+                                                        </option>
+                                                    ))}
+                                                    {/* 목록에 없는 역할(기타)은 현재 값만 표시 */}
+                                                    {!USER_ROLE_SECTIONS.some((s) => s.role === user.role) && (
+                                                        <option value={user.role} disabled>
+                                                            {user.role}
+                                                        </option>
+                                                    )}
+                                                </select>
+                                            )}
+                                        </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(user.createdAt).toLocaleDateString('ko-KR')}</td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatDateTime(lastLoginMap[String(user.id)])}</td>
                                         <td className="px-6 py-4 whitespace-nowrap text-right">

@@ -14,4 +14,7 @@ export const UserService = {
 
     post: (newUser : user) => api.post(`/api/user-list` , newUser),
 
+    //역할 변경 (최고 관리자 전용)
+    putRole: (memberId: string, role: string) => api.put(`/api/user-list/role`, { memberId, role }),
+
 };

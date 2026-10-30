@@ -30,4 +30,8 @@ public class MemberRole extends DateSuperClass {
       @ManyToOne(fetch = FetchType.LAZY)
       @JoinColumn(name = "ROLE_ID")
       private Role role;
+
+      public void modifyRole(Role role) {
+          this.role = role;
+      }
 }
