@@ -92,6 +92,11 @@ export default function SuperAdminPage() {
 
     //제출 목록
     const [submissions, setSubmissions] = useState<Submission[]>([]);
+    //제출 목록 보기 방식 (최신순 / 타입별) + 필터
+    const [submissionView, setSubmissionView] = useState<'recent' | 'group'>('recent');
+    const [submissionStatus, setSubmissionStatus] = useState<'all' | 'done' | 'draft'>('all');
+    const [submissionPortfolio, setSubmissionPortfolio] = useState('');
+    const [submissionKeyword, setSubmissionKeyword] = useState('');
 
     const [users, setUsers] = useState<UserList>();
     //사용자별 마지막 접속 (회원 ID → 일시)
@@ -874,6 +879,86 @@ export default function SuperAdminPage() {
         { key: 'submissions', label: '제출 목록', icon: 'document' },
         { key: 'categories', label: '카테고리 관리', icon: 'folder' },
     ];
+
+    //제출 목록: 표시 일시 (임시저장은 마지막 수정, 제출완료는 제출 시각)
+    const getSubmittedAt = (submission: Submission) => new Date(submission.isDraft ? submission.updatedAt : submission.completedAt).getTime() || 0;
+    const NEW_DAYS = 7;
+    const newSince = Date.now() - NEW_DAYS * 24 * 60 * 60 * 1000;
+    const isNewSubmission = (submission: Submission) => getSubmittedAt(submission) >= newSince;
+
+    //필터 선택지용 타입 목록
+    const submissionPortfolioOptions = Array.from(new Map((submissions ?? []).map((s) => [String(s.portfolioId), s.portfolio?.title || '알 수 없음'])).entries()).sort((a, b) => a[1].localeCompare(b[1], 'ko'));
+
+    //필터 적용 + 최신순 정렬
+    const keyword = submissionKeyword.trim().toLowerCase();
+    const filteredSubmissions = (submissions ?? [])
+        .filter((s) => (submissionStatus === 'all' ? true : submissionStatus === 'draft' ? s.isDraft : !s.isDraft))
+        .filter((s) => !submissionPortfolio || String(s.portfolioId) === submissionPortfolio)
+        .filter((s) => !keyword || (s.companyName ?? '').toLowerCase().includes(keyword))
+        .sort((a, b) => getSubmittedAt(b) - getSubmittedAt(a));
+    const isSubmissionFiltered = submissionStatus !== 'all' || !!submissionPortfolio || !!keyword;
+
+    //제출 목록 한 줄 (최신순 / 타입별 보기 공용)
+    const renderSubmissionRow = (submission: Submission, showPortfolio: boolean) => (
+        <tr key={submission.id} className="hover:bg-gray-50 transition-colors">
+            <td className="px-6 py-4 text-sm font-semibold text-gray-900">
+                <div className="flex items-center gap-2">
+                    {submission.companyName}
+                    {isNewSubmission(submission) && <span className="px-1.5 py-0.5 rounded bg-red-500 text-white text-[10px] font-bold leading-none">NEW</span>}
+                </div>
+            </td>
+            {showPortfolio && <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">{submission.portfolio?.title || '알 수 없음'}</td>}
+            <td className="px-6 py-4 text-sm whitespace-nowrap">
+                {submission.isDraft ? (
+                    <span className="px-2.5 py-1 bg-amber-50 text-amber-700 rounded-full text-xs font-semibold">임시저장</span>
+                ) : (
+                    <span onClick={() => submissionOff(submission)} title="클릭하면 임시저장으로 되돌립니다" className="px-2.5 py-1 bg-emerald-50 text-emerald-700 rounded-full text-xs font-semibold cursor-pointer hover:bg-emerald-100 transition-colors">
+                        제출완료
+                    </span>
+                )}
+            </td>
+            <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">{new Date(submission.isDraft ? submission.updatedAt : submission.completedAt).toLocaleString('ko-KR')}</td>
+            <td className="px-6 py-4 text-sm">
+                <div className="flex flex-col md:flex-row md:justify-end gap-2 md:gap-4">
+                    <button onClick={() => handleDetailSubmission(submission)} className={`${ACTION} text-left`}>
+                        상세보기
+                    </button>
+                    <button onClick={() => downloadExcel(submission)} className={`${ACTION} text-left`}>
+                        엑셀 다운로드
+                    </button>
+                    <button
+                        onClick={async () => {
+                            if (confirm('이 제출을 삭제하시겠습니까?')) {
+                                await request(
+                                    () => SubmissionService.delete(submission.id),
+                                    (res) => {
+                                        alert('삭제되었습니다.');
+                                        fetchSubmissions();
+                                    },
+                                    { ignoreErrorRedirect: true },
+                                );
+                            }
+                        }}
+                        className={`${ACTION_DANGER} text-left`}
+                    >
+                        삭제
+                    </button>
+                </div>
+            </td>
+        </tr>
+    );
+
+    const renderSubmissionHead = (showPortfolio: boolean) => (
+        <thead className="bg-gray-50">
+            <tr>
+                <th className={TH}>상호명</th>
+                {showPortfolio && <th className={TH}>타입</th>}
+                <th className={TH}>상태</th>
+                <th className={TH}>제출일시</th>
+                <th className={`${TH} text-right`}>작업</th>
+            </tr>
+        </thead>
+    );
 
     return (
         <div className="min-h-screen bg-gray-50">
@@ -2197,21 +2282,82 @@ export default function SuperAdminPage() {
                     />
 
                     {/* 전체 요약 */}
-                    <div className="grid grid-cols-3 gap-3 mb-8">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
                         <StatCard label="전체" value={submissions?.length ?? 0} unit="건" />
+                        <StatCard label={`최근 ${NEW_DAYS}일`} value={submissions?.filter(isNewSubmission).length ?? 0} unit="건" valueClass="text-red-500" />
                         <StatCard label="제출완료" value={submissions?.filter((s) => !s.isDraft).length ?? 0} unit="건" valueClass="text-emerald-600" />
                         <StatCard label="임시저장" value={submissions?.filter((s) => s.isDraft).length ?? 0} unit="건" valueClass="text-amber-500" />
                     </div>
 
+                    {/* 보기 방식 + 필터 */}
+                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 mb-6">
+                        <div className="inline-flex self-start p-1 rounded-xl bg-gray-100">
+                            {(
+                                [
+                                    ['recent', '최신순 목록'],
+                                    ['group', '타입별 보기'],
+                                ] as const
+                            ).map(([key, label]) => (
+                                <button key={key} type="button" onClick={() => setSubmissionView(key)} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${submissionView === key ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}>
+                                    {label}
+                                </button>
+                            ))}
+                        </div>
+                        <div className="flex flex-col sm:flex-row gap-2">
+                            <select value={submissionStatus} onChange={(e) => setSubmissionStatus(e.target.value as 'all' | 'done' | 'draft')} className="px-3 py-2.5 rounded-xl border border-gray-200 bg-white text-sm">
+                                <option value="all">상태 전체</option>
+                                <option value="done">제출완료</option>
+                                <option value="draft">임시저장</option>
+                            </select>
+                            <select value={submissionPortfolio} onChange={(e) => setSubmissionPortfolio(e.target.value)} className="px-3 py-2.5 rounded-xl border border-gray-200 bg-white text-sm">
+                                <option value="">타입 전체</option>
+                                {submissionPortfolioOptions.map(([id, title]) => (
+                                    <option key={id} value={id}>
+                                        {title}
+                                    </option>
+                                ))}
+                            </select>
+                            <div className="relative">
+                                <Icon name="search" className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                                <input type="text" value={submissionKeyword} onChange={(e) => setSubmissionKeyword(e.target.value)} placeholder="상호명 검색" className="w-full sm:w-56 pl-9 pr-3 py-2.5 rounded-xl border border-gray-200 bg-white text-sm" />
+                            </div>
+                            {isSubmissionFiltered && (
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setSubmissionStatus('all');
+                                        setSubmissionPortfolio('');
+                                        setSubmissionKeyword('');
+                                    }}
+                                    className="px-3 py-2.5 text-sm font-semibold text-gray-500 hover:text-gray-900 whitespace-nowrap"
+                                >
+                                    초기화
+                                </button>
+                            )}
+                        </div>
+                    </div>
+
                     {submissions?.length === 0 ? (
                         <EmptyState icon="document" title="제출 내역이 없습니다" description="사용자가 포트폴리오를 제출하면 여기에 표시됩니다" />
+                    ) : filteredSubmissions.length === 0 ? (
+                        <EmptyState icon="search" title="조건에 맞는 제출 내역이 없습니다" description="필터나 검색어를 바꿔보세요" />
+                    ) : submissionView === 'recent' ? (
+                        <div className={CARD}>
+                            <div className="px-6 py-3 border-b border-gray-100 text-sm text-gray-500">
+                                {isSubmissionFiltered ? `검색 결과 ${filteredSubmissions.length}건` : `전체 ${filteredSubmissions.length}건`} · 최신순
+                            </div>
+                            <div className="overflow-x-auto">
+                                <table className="w-full">
+                                    {renderSubmissionHead(true)}
+                                    <tbody className="divide-y divide-gray-100">{filteredSubmissions.map((submission) => renderSubmissionRow(submission, true))}</tbody>
+                                </table>
+                            </div>
+                        </div>
                     ) : (
                         <div className="space-y-8">
                             {/* 포트폴리오별로 그룹화 */}
-                            {submissions &&
-                                submissions.length > 0 &&
-                                Object.entries(
-                                    submissions.reduce((groups: any, submission) => {
+                            {Object.entries(
+                                    filteredSubmissions.reduce((groups: any, submission) => {
                                         const portfolioId = submission.portfolioId;
                                         const portfolioTitle = submission.portfolio?.title || '알 수 없음';
                                         const key = `${portfolioId}-${portfolioTitle}`;
@@ -2242,58 +2388,8 @@ export default function SuperAdminPage() {
                                         {/* 제출목록 테이블 */}
                                         <div className="overflow-x-auto">
                                             <table className="w-full">
-                                                <thead className="bg-gray-50">
-                                                    <tr>
-                                                        <th className={TH}>상호명</th>
-                                                        <th className={TH}>상태</th>
-                                                        <th className={TH}>제출일시</th>
-                                                        <th className={`${TH} text-right`}>작업</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody className="divide-y divide-gray-100">
-                                                    {group.submissions.map((submission: any) => (
-                                                        <tr key={submission.id} className="hover:bg-gray-50 transition-colors">
-                                                            <td className="px-6 py-4 text-sm font-semibold text-gray-900">{submission.companyName}</td>
-                                                            <td className="px-6 py-4 text-sm whitespace-nowrap">
-                                                                {submission.isDraft ? (
-                                                                    <span className="px-2.5 py-1 bg-amber-50 text-amber-700 rounded-full text-xs font-semibold">임시저장</span>
-                                                                ) : (
-                                                                    <span onClick={() => submissionOff(submission)} title="클릭하면 임시저장으로 되돌립니다" className="px-2.5 py-1 bg-emerald-50 text-emerald-700 rounded-full text-xs font-semibold cursor-pointer hover:bg-emerald-100 transition-colors">
-                                                                        제출완료
-                                                                    </span>
-                                                                )}
-                                                            </td>
-                                                            <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">{new Date(submission.isDraft ? submission.updatedAt : submission.completedAt).toLocaleString('ko-KR')}</td>
-                                                            <td className="px-6 py-4 text-sm">
-                                                                <div className="flex flex-col md:flex-row md:justify-end gap-2 md:gap-4">
-                                                                    <button onClick={() => handleDetailSubmission(submission)} className={`${ACTION} text-left`}>
-                                                                        상세보기
-                                                                    </button>
-                                                                    <button onClick={() => downloadExcel(submission)} className={`${ACTION} text-left`}>
-                                                                        엑셀 다운로드
-                                                                    </button>
-                                                                    <button
-                                                                        onClick={async () => {
-                                                                            if (confirm('이 제출을 삭제하시겠습니까?')) {
-                                                                                await request(
-                                                                                    () => SubmissionService.delete(submission.id),
-                                                                                    (res) => {
-                                                                                        alert('삭제되었습니다.');
-                                                                                        fetchSubmissions();
-                                                                                    },
-                                                                                    { ignoreErrorRedirect: true },
-                                                                                );
-                                                                            }
-                                                                        }}
-                                                                        className={`${ACTION_DANGER} text-left`}
-                                                                    >
-                                                                        삭제
-                                                                    </button>
-                                                                </div>
-                                                            </td>
-                                                        </tr>
-                                                    ))}
-                                                </tbody>
+                                                {renderSubmissionHead(false)}
+                                                <tbody className="divide-y divide-gray-100">{group.submissions.map((submission: Submission) => renderSubmissionRow(submission, false))}</tbody>
                                             </table>
                                         </div>
                                     </div>
