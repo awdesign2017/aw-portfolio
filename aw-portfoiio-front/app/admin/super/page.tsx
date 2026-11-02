@@ -2303,13 +2303,13 @@ export default function SuperAdminPage() {
                                 </button>
                             ))}
                         </div>
-                        <div className="flex flex-col sm:flex-row gap-2">
+                        <div className="flex flex-col sm:flex-row sm:flex-wrap lg:justify-end gap-2 min-w-0">
                             <select value={submissionStatus} onChange={(e) => setSubmissionStatus(e.target.value as 'all' | 'done' | 'draft')} className="px-3 py-2.5 rounded-xl border border-gray-200 bg-white text-sm">
                                 <option value="all">상태 전체</option>
                                 <option value="done">제출완료</option>
                                 <option value="draft">임시저장</option>
                             </select>
-                            <select value={submissionPortfolio} onChange={(e) => setSubmissionPortfolio(e.target.value)} className="px-3 py-2.5 rounded-xl border border-gray-200 bg-white text-sm">
+                            <select value={submissionPortfolio} onChange={(e) => setSubmissionPortfolio(e.target.value)} className="sm:max-w-[220px] truncate px-3 py-2.5 rounded-xl border border-gray-200 bg-white text-sm">
                                 <option value="">타입 전체</option>
                                 {submissionPortfolioOptions.map(([id, title]) => (
                                     <option key={id} value={id}>
@@ -2317,9 +2317,9 @@ export default function SuperAdminPage() {
                                     </option>
                                 ))}
                             </select>
-                            <div className="relative">
-                                <Icon name="search" className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                                <input type="text" value={submissionKeyword} onChange={(e) => setSubmissionKeyword(e.target.value)} placeholder="상호명 검색" className="w-full sm:w-56 pl-9 pr-3 py-2.5 rounded-xl border border-gray-200 bg-white text-sm" />
+                            <div className="relative sm:w-56">
+                                <Icon name="search" className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                                <input type="search" value={submissionKeyword} onChange={(e) => setSubmissionKeyword(e.target.value)} placeholder="상호명 검색" className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-gray-200 bg-white text-sm" />
                             </div>
                             {isSubmissionFiltered && (
                                 <button
