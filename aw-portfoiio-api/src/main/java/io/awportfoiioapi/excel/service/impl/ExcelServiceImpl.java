@@ -19,8 +19,10 @@ import io.awportfoiioapi.submission.entity.Submission;
 import io.awportfoiioapi.submission.repository.SubmissionRepository;
 import lombok.RequiredArgsConstructor;
 import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.VerticalAlignment;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
@@ -66,7 +68,12 @@ public class ExcelServiceImpl implements ExcelService {
             Map<String, Object> responseMap = mapper.readValue(submission.getSubmissionJson(), new TypeReference<>() {});
     
             Sheet sheet = workbook.createSheet("제출 데이터");
-    
+
+            // 여러 개 입력 항목(객실/스페셜)은 칸 안 줄바꿈으로 표시
+            CellStyle wrapStyle = workbook.createCellStyle();
+            wrapStyle.setWrapText(true);
+            wrapStyle.setVerticalAlignment(VerticalAlignment.TOP);
+
             int rowIdx = 0;
     
             // 헤더 / 데이터 행
@@ -106,74 +113,75 @@ public class ExcelServiceImpl implements ExcelService {
                     headerRow.createCell(colIdx + 7).setCellValue("성수기");
     
                     if (rooms != null) {
-                        
-                        String amenities = rooms.stream()
-                                .map(r -> String.valueOf(r.getOrDefault("amenities", "")))
-                                .collect(Collectors.joining(" / "));
-                        
-                        String capacity = rooms.stream()
+
+                        String amenities = numberedLines(rooms.stream()
+                                .map(r -> text(r.get("amenities")))
+                                .toList());
+
+                        String capacity = numberedLines(rooms.stream()
                                 .map(r -> {
                                     Map<String, Object> cap = (Map<String, Object>) r.get("capacity");
                                     if (cap == null) return "";
-                        
-                                    String standard = String.valueOf(cap.getOrDefault("standard", ""));
-                                    String max = String.valueOf(cap.getOrDefault("max", ""));
+
+                                    String standard = text(cap.get("standard"));
+                                    String max = text(cap.get("max"));
+                                    if (standard.isEmpty() && max.isEmpty()) return "";
                                     return standard + "명/" + max + "명";
                                 })
-                                .collect(Collectors.joining(", "));
-                        
-                        String names = rooms.stream()
-                                .map(r -> String.valueOf(r.getOrDefault("name", "")))
-                                .collect(Collectors.joining(" / "));
-    
-                        String descs = rooms.stream()
-                                .map(r -> String.valueOf(r.getOrDefault("desc", "")))
-                                .collect(Collectors.joining(" / "));
-    
-                        String types = rooms.stream()
-                                .map(r -> String.valueOf(r.getOrDefault("type", "")))
-                                .collect(Collectors.joining(" / "));
-    
+                                .toList());
+
+                        String names = numberedLines(rooms.stream()
+                                .map(r -> text(r.get("name")))
+                                .toList());
+
+                        String descs = numberedLines(rooms.stream()
+                                .map(r -> text(r.get("desc")))
+                                .toList());
+
+                        String types = numberedLines(rooms.stream()
+                                .map(r -> text(r.get("type")))
+                                .toList());
+
                         Function<Object, String> priceFormatter = priceObj -> {
-    
+
                             if (!(priceObj instanceof Map<?, ?> raw)) {
                                 return "";
                             }
-    
+
                             @SuppressWarnings("unchecked")
                             Map<String, Object> map = (Map<String, Object>) raw;
-    
-                            String weekday = String.valueOf(map.getOrDefault("weekday", ""));
-                            String fri = String.valueOf(map.getOrDefault("fri", ""));
-                            String sat = String.valueOf(map.getOrDefault("sat", ""));
-                            String sun = String.valueOf(map.getOrDefault("sun", ""));
-    
+
+                            String weekday = text(map.get("weekday"));
+                            String fri = text(map.get("fri"));
+                            String sat = text(map.get("sat"));
+                            String sun = text(map.get("sun"));
+
                             return String.format(
                                     "평일:%s 금:%s 토:%s 일:%s",
                                     weekday, fri, sat, sun
                             );
                         };
-    
-                        String low = rooms.stream()
+
+                        String low = numberedLines(rooms.stream()
                                 .map(r -> priceFormatter.apply(r.get("priceLow")))
-                                .collect(Collectors.joining(" , "));
-    
-                        String mid = rooms.stream()
+                                .toList());
+
+                        String mid = numberedLines(rooms.stream()
                                 .map(r -> priceFormatter.apply(r.get("priceMid")))
-                                .collect(Collectors.joining(" , "));
-    
-                        String high = rooms.stream()
+                                .toList());
+
+                        String high = numberedLines(rooms.stream()
                                 .map(r -> priceFormatter.apply(r.get("priceHigh")))
-                                .collect(Collectors.joining(" , "));
-                        
-                        dataRow.createCell(colIdx + 0).setCellValue(names);
-                        dataRow.createCell(colIdx + 1).setCellValue(descs);
-                        dataRow.createCell(colIdx + 2).setCellValue(capacity);
-                        dataRow.createCell(colIdx + 3).setCellValue(types);
-                        dataRow.createCell(colIdx + 4).setCellValue(amenities);
-                        dataRow.createCell(colIdx + 5).setCellValue(low);
-                        dataRow.createCell(colIdx + 6).setCellValue(mid);
-                        dataRow.createCell(colIdx + 7).setCellValue(high);
+                                .toList());
+
+                        setWrapCell(dataRow, colIdx + 0, names, wrapStyle);
+                        setWrapCell(dataRow, colIdx + 1, descs, wrapStyle);
+                        setWrapCell(dataRow, colIdx + 2, capacity, wrapStyle);
+                        setWrapCell(dataRow, colIdx + 3, types, wrapStyle);
+                        setWrapCell(dataRow, colIdx + 4, amenities, wrapStyle);
+                        setWrapCell(dataRow, colIdx + 5, low, wrapStyle);
+                        setWrapCell(dataRow, colIdx + 6, mid, wrapStyle);
+                        setWrapCell(dataRow, colIdx + 7, high, wrapStyle);
                     }
     
                     colIdx += 8;
@@ -191,16 +199,16 @@ public class ExcelServiceImpl implements ExcelService {
     
                     if (specials != null) {
     
-                        String names = specials.stream()
-                                .map(s -> String.valueOf(s.getOrDefault("name", "")))
-                                .collect(Collectors.joining(" / "));
-    
-                        String descs = specials.stream()
-                                .map(s -> String.valueOf(s.getOrDefault("desc", "")))
-                                .collect(Collectors.joining(" / "));
-    
-                        dataRow.createCell(colIdx + 0).setCellValue(names);
-                        dataRow.createCell(colIdx + 1).setCellValue(descs);
+                        String names = numberedLines(specials.stream()
+                                .map(s -> text(s.get("name")))
+                                .toList());
+
+                        String descs = numberedLines(specials.stream()
+                                .map(s -> text(s.get("desc")))
+                                .toList());
+
+                        setWrapCell(dataRow, colIdx + 0, names, wrapStyle);
+                        setWrapCell(dataRow, colIdx + 1, descs, wrapStyle);
                     }
     
                     colIdx += 2;
@@ -390,18 +398,28 @@ public class ExcelServiceImpl implements ExcelService {
     
                     String text = cell.toString();
                     if (text == null) continue;
-    
-                    int visual = 0;
-                    for (char ch : text.toCharArray()) {
-                        visual += (ch > 0x007F) ? 2 : 1;
+
+                    // 줄바꿈된 칸은 가장 긴 줄 기준
+                    for (String line : text.split("\n")) {
+                        int visual = 0;
+                        for (char ch : line.toCharArray()) {
+                            visual += (ch > 0x007F) ? 2 : 1;
+                        }
+                        maxWidth = Math.max(maxWidth, visual);
                     }
-    
-                    maxWidth = Math.max(maxWidth, visual);
                 }
-    
+
                 sheet.setColumnWidth(i, Math.min(255 * 256, (maxWidth + 2) * 256));
             }
-    
+
+            // ===================== 데이터 행 높이 (줄 수 기준) =====================
+            int maxLines = 1;
+            for (Cell cell : dataRow) {
+                maxLines = Math.max(maxLines, cell.toString().split("\n", -1).length);
+            }
+            // 엑셀 행 높이 최대 409pt
+            dataRow.setHeightInPoints(Math.min(409f, maxLines * sheet.getDefaultRowHeightInPoints()));
+
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             workbook.write(out);
             return out.toByteArray();
@@ -481,5 +499,27 @@ public class ExcelServiceImpl implements ExcelService {
         }
         
         return new ApiResponse(200, true, "포트폴리오가 복사되었습니다.");
+    }
+
+    // null 이면 빈 문자열 (getOrDefault 는 값이 null 로 들어있으면 "null" 이 찍힘)
+    private static String text(Object value) {
+        return value == null ? "" : String.valueOf(value).trim();
+    }
+
+    // [1] 값\n[2] 값 ... 형태로 변환 (사용자가 입력한 "/" "," 와 구분되도록)
+    private static String numberedLines(List<String> values) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < values.size(); i++) {
+            if (i > 0) sb.append("\n");
+            String value = values.get(i);
+            sb.append("[").append(i + 1).append("] ").append(value == null || value.isBlank() ? "(미입력)" : value);
+        }
+        return sb.toString();
+    }
+
+    private static void setWrapCell(Row row, int colIdx, String value, CellStyle style) {
+        Cell cell = row.createCell(colIdx);
+        cell.setCellValue(value);
+        cell.setCellStyle(style);
     }
 }
