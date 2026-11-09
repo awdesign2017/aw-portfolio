@@ -123,6 +123,12 @@ export default function PortfolioForm() {
 
     //로그인 상태
     const currentUser = useRecoilValue(userState);
+    //관리자 미리보기 (질문지 테스트용: 필수 검증 없이 이동, 저장하지 않음) - 관리자 계정에서만 동작
+    const isPreviewMode = !isDetailMode && searchParams.get('preview') === 'true' && (currentUser?.role === 'SUPER_ADMIN' || currentUser?.role === 'ADMIN');
+    //단계를 자유롭게 이동할 수 있는 모드
+    const canJumpAnyStep = isDetailMode || isPreviewMode;
+    //한 페이지로 전체 보기 (상세보기 전용)
+    const [showAllSteps, setShowAllSteps] = useState(false);
     //썸네일
     const [showPreview, setShowPreview] = useState(false);
     const previewRef = useRef<HTMLDivElement>(null);
@@ -150,6 +156,8 @@ export default function PortfolioForm() {
     const [portfolio, setPortfolio] = useState<Portfolio | null>(null);
     const [questions, setQuestions] = useState<Question[]>([]);
     const [currentStep, setCurrentStep] = useState(-1); // -1 = 로딩, 0+ = 질문 단계
+    //작성 모드에서 지금까지 도달한 가장 먼 단계 (그 단계까지는 바로가기 가능)
+    const [furthestStep, setFurthestStep] = useState(-1);
     const [formData, setFormData] = useState<FormData>({});
     const [errors, setErrors] = useState<FormData>({});
 
@@ -249,6 +257,10 @@ export default function PortfolioForm() {
         }
     }, [questions, minStep, currentStep]);
 
+    useEffect(() => {
+        setFurthestStep((prev) => Math.max(prev, currentStep));
+    }, [currentStep]);
+
     // 1. 유저 정보 확인
     useEffect(() => {
         const loginGb = localStorage.getItem('login');
@@ -268,7 +280,8 @@ export default function PortfolioForm() {
             checkExistingSubmission();
         }
 
-        if (!isDetailMode) {
+        //로그인 정보가 확인된 뒤에 미리보기 여부를 판단해야 하므로 currentUser 가 있을 때만 시작
+        if (currentUser && !isDetailMode && !isPreviewMode) {
             startAutoSave();
         }
     }, [currentUser, portfolio?.id]);
@@ -439,6 +452,8 @@ export default function PortfolioForm() {
 
     //sort 추가 2025.12.24
     const currentQuestions = questions.filter((q) => q.step === currentStep).sort((a, b) => a.order - b.order);
+    //질문이 있는 단계 목록 (단계 바로가기·전체 보기용)
+    const allSteps = Array.from(new Set(questions.map((q) => q.step))).sort((a, b) => a - b);
 
     const validateStep = (): boolean => {
         const newErrors: FormData = {};
@@ -997,8 +1012,8 @@ export default function PortfolioForm() {
     };
 
     const handleNext = () => {
-        // 디테일 모드면 검증 없이 이동
-        if (isDetailMode) {
+        // 상세보기·미리보기면 검증 없이 이동
+        if (canJumpAnyStep) {
             if (currentStep < maxStep) {
                 setCurrentStep(currentStep + 1);
                 window.scrollTo(0, 0);
@@ -1023,9 +1038,25 @@ export default function PortfolioForm() {
         }
     };
 
+    // 단계 바로가기 (작성 모드는 이미 지나온 단계까지만, 상세보기·미리보기는 모든 단계)
+    const goToStep = (step: number) => {
+        if (!canJumpAnyStep && step > furthestStep) return;
+        setShowAllSteps(false);
+        setCurrentStep(step);
+        window.scrollTo(0, 0);
+    };
+
+    // 미리보기: 저장하지 않고 전체 필수 항목 검증만 실행 (빠진 단계는 validateAllSteps 가 안내)
+    const handleValidateOnly = () => {
+        if (validateAllSteps()) {
+            alert('모든 필수 항목이 입력되었습니다.\n미리보기 모드라 실제로 제출되지는 않습니다.');
+        }
+    };
+
     //임시저장
     const handleSaveDraft = async (autoSave: boolean) => {
-        if (!portfolio) return;
+        //상세보기·미리보기에서는 저장하지 않음
+        if (!portfolio || isDetailMode || isPreviewMode) return;
         setIsDraft(true);
         setSubmitting(true);
         try {
@@ -1087,6 +1118,12 @@ export default function PortfolioForm() {
 
     //제출하기
     const handleSubmit = async () => {
+        //상세보기에서는 제출하지 않음 (마지막 단계에서 Enter 를 눌러도 무시)
+        if (isDetailMode) return;
+        if (isPreviewMode) {
+            handleValidateOnly();
+            return;
+        }
         if (!validateAllSteps() || !portfolio) return;
 
         if (!confirm('최종 제출 후에는 수정이 불가능합니다. 제출하시겠습니까?')) {
@@ -1300,21 +1337,64 @@ export default function PortfolioForm() {
                     {portfolio.description && <p className="text-gray-600">{portfolio.description}</p>}
                 </div>
 
+                {/* 미리보기 안내 */}
+                {isPreviewMode && (
+                    <div className="mb-6 rounded-lg border-2 border-dashed border-black bg-gray-50 px-4 py-3 text-sm text-center text-gray-700">
+                        <strong className="text-black">미리보기 모드</strong> · 필수 항목을 비워도 단계를 이동할 수 있고, 입력한 내용은 저장되지 않습니다.
+                    </div>
+                )}
+
                 {/* Progress Bar */}
                 <div className="mb-8">
-                    <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm font-medium text-gray-700">
-                            {currentStep === 0 ? '안내사항' : `단계 ${currentStep}`} / {maxStep}
-                        </span>
-                        <span className="text-sm text-gray-500">{Math.round(((currentStep - minStep + 1) / (maxStep - minStep + 1)) * 100)}% 완료</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div
-                            className="bg-black h-2 rounded-full transition-all duration-300"
-                            style={{
-                                width: `${((currentStep - minStep + 1) / (maxStep - minStep + 1)) * 100}%`,
-                            }}
-                        />
+                    {!showAllSteps && (
+                        <>
+                            <div className="flex justify-between items-center mb-2">
+                                <span className="text-sm font-medium text-gray-700">
+                                    {currentStep === 0 ? '안내사항' : `단계 ${currentStep}`} / {maxStep}
+                                </span>
+                                <span className="text-sm text-gray-500">{Math.round(((currentStep - minStep + 1) / (maxStep - minStep + 1)) * 100)}% 완료</span>
+                            </div>
+                            <div className="w-full bg-gray-200 rounded-full h-2">
+                                <div
+                                    className="bg-black h-2 rounded-full transition-all duration-300"
+                                    style={{
+                                        width: `${((currentStep - minStep + 1) / (maxStep - minStep + 1)) * 100}%`,
+                                    }}
+                                />
+                            </div>
+                        </>
+                    )}
+
+                    {/* 단계 바로가기 */}
+                    <div className="mt-4 flex flex-wrap items-center gap-1.5">
+                        {allSteps.map((step) => {
+                            const active = !showAllSteps && step === currentStep;
+                            const reachable = canJumpAnyStep || step <= furthestStep;
+                            const fullTitle = stepMessages[step]?.title ?? `단계 ${step}`;
+                            //'단계 1 - 필수 정보 입력' → '필수 정보 입력'
+                            const shortTitle = step === 0 ? '안내사항' : fullTitle.includes(' - ') ? fullTitle.split(' - ')[1] : '';
+                            return (
+                                <button
+                                    key={step}
+                                    type="button"
+                                    onClick={() => goToStep(step)}
+                                    disabled={!reachable}
+                                    title={reachable ? fullTitle : '이전 단계를 완료하면 이동할 수 있습니다'}
+                                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-semibold transition-colors ${
+                                        active ? 'bg-black border-black text-white' : reachable ? 'bg-white border-gray-300 text-gray-700 hover:border-black' : 'bg-gray-50 border-gray-200 text-gray-300 cursor-not-allowed'
+                                    }`}
+                                >
+                                    {step === 0 ? '안내' : step}
+                                    {shortTitle && step !== 0 && <span className="hidden md:inline font-medium">{shortTitle}</span>}
+                                </button>
+                            );
+                        })}
+
+                        {isDetailMode && (
+                            <button type="button" onClick={() => setShowAllSteps((prev) => !prev)} className="ml-auto px-3 py-1.5 rounded-full border-2 border-black text-xs font-semibold hover:bg-black hover:text-white transition-colors">
+                                {showAllSteps ? '단계별로 보기' : '한 페이지로 전체 보기'}
+                            </button>
+                        )}
                     </div>
                 </div>
 
@@ -1323,10 +1403,12 @@ export default function PortfolioForm() {
                     <div>
                         <div className="mb-6">
                             {(() => {
-                                const currentMessage = stepMessages[currentStep] || {
-                                    title: `단계 ${currentStep}`,
-                                    description: <>정보를 입력해 주세요.</>,
-                                };
+                                const currentMessage = showAllSteps
+                                    ? { title: '전체 단계 보기', description: <>모든 단계의 제출 내용을 한 페이지에서 확인합니다.</> }
+                                    : stepMessages[currentStep] || {
+                                          title: `단계 ${currentStep}`,
+                                          description: <>정보를 입력해 주세요.</>,
+                                      };
 
                                 return (
                                     <>
@@ -1338,10 +1420,8 @@ export default function PortfolioForm() {
                         </div>
 
                         <div className="pr-2 space-y-8">
-                            {currentQuestions.length === 0 ? (
-                                <div className="text-center py-8 text-gray-500">이 단계에는 질문이 없습니다.</div>
-                            ) : (
-                                currentQuestions.map((question) => {
+                            {(() => {
+                                const renderQuestion = (question: Question) => {
                                     if (question.questionType === 'parlor') {
                                         return (
                                             <div key={question.id} className="mt-6 space-y-8">
@@ -1659,13 +1739,31 @@ export default function PortfolioForm() {
                                             disabled={isDetailMode}
                                         />
                                     );
-                                })
-                            )}
+                                };
+
+                                //한 페이지로 전체 보기 (상세보기 전용): 단계 제목과 함께 모든 단계를 이어서 표시
+                                if (showAllSteps) {
+                                    return allSteps.map((step, index) => {
+                                        const stepQuestions = questions.filter((q) => q.step === step).sort((a, b) => a.order - b.order);
+                                        return (
+                                            <section key={`step-${step}`} className={`space-y-8 ${index > 0 ? 'pt-8 border-t-2 border-gray-200' : ''}`}>
+                                                <h2 className="text-xl font-bold text-black">{stepMessages[step]?.title ?? `단계 ${step}`}</h2>
+                                                {stepQuestions.map(renderQuestion)}
+                                            </section>
+                                        );
+                                    });
+                                }
+
+                                if (currentQuestions.length === 0) {
+                                    return <div className="text-center py-8 text-gray-500">이 단계에는 질문이 없습니다.</div>;
+                                }
+                                return currentQuestions.map(renderQuestion);
+                            })()}
                         </div>
                     </div>
 
-                    {/* Navigation Buttons */}
-                    <div className="flex justify-between items-center mt-8 pt-6 border-t-2 border-gray-200">
+                    {/* Navigation Buttons (전체 보기에서는 숨김) */}
+                    <div className={`flex justify-between items-center mt-8 pt-6 border-t-2 border-gray-200 ${showAllSteps ? 'hidden' : ''}`}>
                         {/* 왼쪽 */}
                         <div className="flex items-center gap-4">
                             <button
@@ -1706,7 +1804,7 @@ export default function PortfolioForm() {
                         {/* 오른쪽 - 디테일 모드 분리*/}
                         {!isDetailMode ? (
                             <div className="flex gap-3">
-                                {currentStep !== 0 && (
+                                {currentStep !== 0 && !isPreviewMode && (
                                     <button onClick={() => handleSaveDraft(false)} disabled={submitting} className="px-6 py-3 border-2 border-gray-300 rounded-lg font-semibold hover:border-black transition-all disabled:opacity-50">
                                         임시저장
                                     </button>
@@ -1715,6 +1813,10 @@ export default function PortfolioForm() {
                                 {currentStep < maxStep ? (
                                     <button onClick={handleNext} className="px-6 py-3 bg-black text-white rounded-lg font-semibold hover:bg-gray-800 transition-all">
                                         {currentStep === 0 ? '시작하기' : '다음'}
+                                    </button>
+                                ) : isPreviewMode ? (
+                                    <button onClick={handleValidateOnly} className="px-6 py-3 bg-black text-white rounded-lg font-semibold hover:bg-gray-800 transition-all">
+                                        검증만 해보기
                                     </button>
                                 ) : (
                                     <button onClick={handleSubmit} disabled={submitting} className="px-6 py-3 bg-black text-white rounded-lg font-semibold hover:bg-gray-800 transition-all disabled:bg-gray-400 disabled:cursor-not-allowed">
@@ -1738,11 +1840,11 @@ export default function PortfolioForm() {
                 <div className="text-center mt-6">
                     <button
                         onClick={() => {
-                            router.push(submissionListPath ?? '/');
+                            router.push(submissionListPath ?? (isPreviewMode ? '/admin/super' : '/'));
                         }}
                         className="text-gray-600 hover:text-black transition-all"
                     >
-                        {submissionListPath ? '제출목록으로 돌아가기' : '포트폴리오 리스트로 돌아가기'}
+                        {submissionListPath ? '제출목록으로 돌아가기' : isPreviewMode ? '관리자 페이지로 돌아가기' : '포트폴리오 리스트로 돌아가기'}
                     </button>
                 </div>
             </div>

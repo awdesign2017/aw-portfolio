@@ -276,6 +276,12 @@ export default function SuperAdminPage() {
         );
     };
 
+    //질문지 미리보기 (새 탭, 저장되지 않는 테스트 모드)
+    const openPortfolioPreview = (portfolioId: string) => {
+        if (!portfolioId) return;
+        window.open(`/portfolio/${portfolioId}?preview=true`, '_blank');
+    };
+
     //포트폴리오 카드 (카테고리별 구역에서 사용)
     const renderPortfolioCard = (portfolio: PortfolioContent) => (
         <div key={portfolio.id} className="flex flex-col bg-white rounded-2xl border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
@@ -307,6 +313,9 @@ export default function SuperAdminPage() {
                     </button>
                     <button onClick={() => handleCopyPortfolio(portfolio.id)} className={ACTION}>
                         복제
+                    </button>
+                    <button onClick={() => openPortfolioPreview(portfolio.id)} className={ACTION}>
+                        미리보기
                     </button>
                     <button onClick={() => handleDeletePortfolio(portfolio.id)} className={`${ACTION_DANGER} ml-auto`}>
                         삭제
@@ -1127,6 +1136,10 @@ export default function SuperAdminPage() {
                             title="질문 관리"
                             description={`선택한 포트폴리오의 질문 ${questions.length}개 · ${new Set(questions.map((q) => q.step)).size}단계`}
                             action={
+                            <>
+                            <button onClick={() => openPortfolioPreview(selectedPortfolio)} disabled={!selectedPortfolio || questions.length === 0} className={`${BTN_SECONDARY} disabled:opacity-40 disabled:cursor-not-allowed`}>
+                                질문지 미리보기
+                            </button>
                             <button
                                 onClick={() => {
                                     setEditingQuestion(null);
@@ -1154,6 +1167,7 @@ export default function SuperAdminPage() {
                             >
                                 <Icon name="plus" className="w-4 h-4" />새 질문 추가
                             </button>
+                            </>
                             }
                         />
 
