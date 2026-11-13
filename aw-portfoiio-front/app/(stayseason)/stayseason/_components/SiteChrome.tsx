@@ -44,6 +44,14 @@ export function SiteFooter() {
                     </a>
                 </div>
             </div>
+            {/* 관리자용 바로가기 (로그인하지 않았으면 관리자 로그인 화면으로 이동) */}
+            <div className="border-t border-black/10">
+                <div className="ss-container py-4 text-center">
+                    <a href="/admin/hosting" className="text-sm text-gray-500 transition-colors hover:text-season-ink">
+                        관리자 페이지
+                    </a>
+                </div>
+            </div>
         </footer>
     );
 }

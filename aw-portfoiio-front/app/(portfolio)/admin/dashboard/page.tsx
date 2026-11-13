@@ -147,6 +147,19 @@ export default function AdminDashboard() {
               >
                 메인 페이지
               </button>
+              {/* 스테이시즌 입점 신청 페이지 / 신청 목록 */}
+              <a
+                href="/stayseason"
+                className="px-4 py-2 bg-white text-black border-2 border-black rounded-lg font-semibold hover:bg-black hover:text-white transition-all"
+              >
+                입점 신청 페이지
+              </a>
+              <button
+                onClick={() => router.push("/admin/hosting")}
+                className="px-4 py-2 bg-white text-black border-2 border-black rounded-lg font-semibold hover:bg-black hover:text-white transition-all"
+              >
+                입점 신청 목록
+              </button>
               {currentUser?.role === "SUPER_ADMIN" && (
                 <button
                   onClick={() => router.push("/admin/super")}

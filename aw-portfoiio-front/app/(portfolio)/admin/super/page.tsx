@@ -982,6 +982,11 @@ export default function SuperAdminPage() {
                                 <Icon name="home" className="w-4 h-4" />
                                 메인 페이지
                             </button>
+                            {/* 스테이시즌 입점 신청 페이지 (레이아웃이 달라 일반 링크로 이동) */}
+                            <a href="/stayseason" className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white/10 text-sm font-semibold hover:bg-white/20 transition-colors">
+                                <Icon name="document" className="w-4 h-4" />
+                                입점 신청 페이지
+                            </a>
                             {/* <button onClick={() => router.push('/admin/dashboard')} className="hidden md:block px-2 md:px-4 py-2 bg-white text-black rounded-lg font-semibold hover:bg-gray-200 transition-all">
                                 일반 대시보드
                             </button> */}
