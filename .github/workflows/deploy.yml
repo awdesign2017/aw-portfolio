@@ -94,8 +94,10 @@ jobs:
             bash /home/awdesign/repo/aw-portfolio/deploy/deploy-backend.sh
 
   deploy-frontend:
-    needs: detect
-    if: needs.detect.outputs.run_frontend == 'true'
+    # 백엔드와 같은 서버 폴더에서 git 을 쓰므로 동시에 돌면 git 잠금 충돌로 실패한다.
+    # 백엔드 배포가 끝난 뒤(성공·건너뜀·실패 모두) 실행한다.
+    needs: [detect, deploy-backend]
+    if: ${{ !cancelled() && needs.detect.outputs.run_frontend == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: SSH → 프론트엔드 재배포
