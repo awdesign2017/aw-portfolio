@@ -1011,6 +1011,11 @@ export default function SuperAdminPage() {
                                 </button>
                             );
                         })}
+                        {/* 스테이시즌 입점 신청은 별도 페이지 */}
+                        <button onClick={() => router.push('/admin/hosting')} className="inline-flex items-center gap-1.5 shrink-0 py-3.5 border-b-2 border-transparent text-sm font-semibold text-gray-400 hover:text-gray-700 transition-colors">
+                            <Icon name="home" className="w-4 h-4" />
+                            입점 신청
+                        </button>
                     </div>
                 </div>
             </nav>

@@ -48,6 +48,9 @@ dependencies {
     //아파치 poi
     implementation 'org.apache.poi:poi-ooxml:5.4.0'
 
+    //메일 (스테이시즌 입점 신청 알림)
+    implementation 'org.springframework.boot:spring-boot-starter-mail'
+
 }
 
 tasks.named('test') {

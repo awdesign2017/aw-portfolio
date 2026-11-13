@@ -22,6 +22,29 @@ spring:
     caffeine:
       spec: expireAfterWrite=50m
 
+  # 스테이시즌 입점 신청 알림 메일 (MAIL_HOST 가 비어 있으면 메일을 보내지 않음)
+  mail:
+    host: ${MAIL_HOST:}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: ${MAIL_STARTTLS:true}
+          ssl:
+            enable: ${MAIL_SSL:false}
+          connectiontimeout: 10000
+          timeout: 10000
+          writetimeout: 10000
+
+stayseason:
+  mail:
+    to: ${STAYSEASON_MAIL_TO:support@stay-season.com}
+    from: ${STAYSEASON_MAIL_FROM:}
+
 # 로컬 파일 저장소 설정 (운영)
 file:
   storage:

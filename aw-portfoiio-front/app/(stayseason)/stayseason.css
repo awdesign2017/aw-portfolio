@@ -1,0 +1,55 @@
+/* 스테이시즌 입점 신청 영역 전용 스타일 (기초자료 영역의 globals.css 와 분리) */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    color: #171717;
+    background: #ffffff;
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    word-break: keep-all;
+}
+
+@layer components {
+    .ss-container {
+        @apply mx-auto w-full max-w-6xl px-5 md:px-8;
+    }
+
+    .ss-eyebrow {
+        @apply text-xs font-semibold uppercase tracking-[0.25em] text-gray-400;
+    }
+
+    .ss-btn {
+        @apply inline-flex items-center justify-center px-8 py-4 text-sm font-semibold tracking-wide transition-colors;
+    }
+
+    .ss-btn-dark {
+        @apply bg-gray-900 text-white hover:bg-gray-700 disabled:cursor-not-allowed disabled:bg-gray-300;
+    }
+
+    .ss-btn-light {
+        @apply bg-white text-gray-900 hover:bg-gray-200;
+    }
+
+    .ss-label {
+        @apply mb-2 block text-sm font-semibold text-gray-900;
+    }
+
+    .ss-input {
+        @apply block w-full border border-gray-300 bg-white px-4 py-3 text-base text-gray-900 placeholder-gray-400 transition-colors focus:border-gray-900 focus:outline-none;
+    }
+
+    .ss-input-error {
+        @apply border-red-500 focus:border-red-500;
+    }
+
+    .ss-error {
+        @apply mt-1.5 text-sm text-red-500;
+    }
+}
