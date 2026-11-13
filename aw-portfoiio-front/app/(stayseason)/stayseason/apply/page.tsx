@@ -8,8 +8,20 @@ import { SiteHeader, SiteFooter, SUPPORT_EMAIL } from '../_components/SiteChrome
 
 const BUSINESS_TYPES = ['한옥체험업', '민박업', '생활 숙박시설 운영업', '호텔/호스텔업', '외국인관광도시민박업', '기타'];
 
-const MAX_IMAGES = 10;
+const MIN_IMAGES = 10;
+const MAX_IMAGES = 30;
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
+//서버가 한 번에 받을 수 있는 용량이 100MB 라서 전체 합계는 90MB 로 제한
+const MAX_TOTAL_SIZE = 90 * 1024 * 1024;
+
+//이미지 제출 가이드 (어떤 사진이 필요한지)
+const IMAGE_GUIDE = [
+    { title: '외부', text: '건물 외관, 마당·정원, 주변 풍경, 진입로' },
+    { title: '내부', text: '거실, 주방, 욕실 등 공간 전체가 보이는 사진' },
+    { title: '침실', text: '객실별 침실과 침구가 보이는 사진' },
+    { title: '강조할 공간', text: '수영장, 자쿠지, 테라스, 바비큐장 등 숙소의 대표 공간' },
+    { title: '강조할 소품 및 서비스', text: '어메니티, 웰컴 기프트, 조식, 가구·소품 등' },
+];
 const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 
 type FormValues = {
@@ -45,6 +57,13 @@ const INITIAL_VALUES: FormValues = {
 //화면에 보이는 순서 (오류가 있을 때 가장 위 항목으로 이동)
 const FIELD_ORDER: FieldName[] = ['managerName', 'managerPhone', 'managerEmail', 'experience', 'stayName', 'stayAddress', 'website', 'stayIntro', 'businessRegistered', 'businessType', 'images', 'privacyAgreed'];
 
+//업종 안내 문구: 사업자 등록 여부(준비 중 / 등록 완료)에 따라 달라짐
+function businessTypeGuide(registered: FormValues['businessRegistered']) {
+    if (registered === 'PREPARING') return '준비 중인 업종을 선택해주세요.';
+    if (registered === 'REGISTERED') return '운영 중인 업종을 선택해주세요.';
+    return '업종을 선택해주세요.';
+}
+
 function validate(values: FormValues): Partial<Record<FieldName, string>> {
     const errors: Partial<Record<FieldName, string>> = {};
 
@@ -58,7 +77,7 @@ function validate(values: FormValues): Partial<Record<FieldName, string>> {
     if (!values.stayAddress.trim()) errors.stayAddress = '스테이 주소를 입력해주세요.';
     if (!values.stayIntro.trim()) errors.stayIntro = '스테이 소개를 입력해주세요.';
     if (!values.businessRegistered) errors.businessRegistered = '숙박업 사업자 등록 여부를 선택해주세요.';
-    if (!values.businessType) errors.businessType = '업종을 선택해주세요.';
+    if (!values.businessType) errors.businessType = businessTypeGuide(values.businessRegistered);
     if (!values.privacyAgreed) errors.privacyAgreed = '개인정보 수집 및 이용에 동의해주세요.';
 
     return errors;
@@ -106,6 +125,10 @@ export default function StaySeasonApplyPage() {
                 message = `이미지는 최대 ${MAX_IMAGES}장까지 첨부할 수 있습니다.`;
                 break;
             }
+            if (next.reduce((sum, f) => sum + f.size, 0) + file.size > MAX_TOTAL_SIZE) {
+                message = '이미지 전체 용량은 90MB까지 첨부할 수 있습니다. 용량을 줄이거나 일부는 메일로 보내주세요.';
+                break;
+            }
             next.push(file);
         }
 
@@ -123,6 +146,9 @@ export default function StaySeasonApplyPage() {
         if (submitting) return;
 
         const nextErrors = validate(values);
+        if (images.length < MIN_IMAGES) {
+            nextErrors.images = `이미지를 최소 ${MIN_IMAGES}장 이상 첨부해주세요. (현재 ${images.length}장)`;
+        }
         setErrors(nextErrors);
         setSubmitError('');
 
@@ -151,7 +177,7 @@ export default function StaySeasonApplyPage() {
         try {
             await axios.post('/api/hosting-applications', body, {
                 baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,
-                timeout: 120000,
+                timeout: 600000,
             });
             setSubmitted(true);
             window.scrollTo({ top: 0 });
@@ -253,18 +279,18 @@ export default function StaySeasonApplyPage() {
                         </Field>
                     </Section>
 
-                    {/* 02 스테이 정보 */}
-                    <Section no="02" title="스테이 정보">
-                        <Field name="stayName" label="스테이 이름" required error={errors.stayName}>
+                    {/* 02 숙소 정보 */}
+                    <Section no="02" title="숙소 정보">
+                        <Field name="stayName" label="숙소 이름" required error={errors.stayName}>
                             <input id="stayName" type="text" value={values.stayName} onChange={(e) => setValue('stayName', e.target.value)} maxLength={100} className={inputClass('stayName')} />
                         </Field>
-                        <Field name="stayAddress" label="스테이 주소" required error={errors.stayAddress}>
+                        <Field name="stayAddress" label="숙소 주소" required error={errors.stayAddress}>
                             <input id="stayAddress" type="text" value={values.stayAddress} onChange={(e) => setValue('stayAddress', e.target.value)} maxLength={255} placeholder="도로명 주소를 입력해주세요" autoComplete="street-address" className={inputClass('stayAddress')} />
                         </Field>
                         <Field name="website" label="웹사이트 및 SNS 주소" error={errors.website}>
                             <input id="website" type="text" value={values.website} onChange={(e) => setValue('website', e.target.value)} maxLength={500} placeholder="홈페이지, 인스타그램 등" className={inputClass('website')} />
                         </Field>
-                        <Field name="stayIntro" label="스테이 소개" required error={errors.stayIntro} hint="공간의 기획 의도, 객실 구성, 주변 환경 등을 자유롭게 적어주세요.">
+                        <Field name="stayIntro" label="숙소 소개" required error={errors.stayIntro} hint="공간의 기획 의도, 객실 구성, 주변 환경 등을 자유롭게 적어주세요.">
                             <textarea id="stayIntro" value={values.stayIntro} onChange={(e) => setValue('stayIntro', e.target.value)} maxLength={5000} rows={7} className={`${inputClass('stayIntro')} resize-y`} />
                             <div className="mt-1 text-right text-xs text-gray-400">{values.stayIntro.length.toLocaleString()} / 5,000</div>
                         </Field>
@@ -285,7 +311,7 @@ export default function StaySeasonApplyPage() {
                         </Field>
                         <Field name="businessType" label="업종" required error={errors.businessType}>
                             <select id="businessType" value={values.businessType} onChange={(e) => setValue('businessType', e.target.value)} className={`${inputClass('businessType')} ${values.businessType ? '' : 'text-gray-400'}`}>
-                                <option value="">업종을 선택해주세요</option>
+                                <option value="">{businessTypeGuide(values.businessRegistered)}</option>
                                 {BUSINESS_TYPES.map((type) => (
                                     <option key={type} value={type} className="text-season-ink">
                                         {type}
@@ -299,7 +325,29 @@ export default function StaySeasonApplyPage() {
                     <Section no="04" title="이미지 및 영상">
                         <div id="field-images">
                             <div className="ss-label">
-                                이미지 첨부 <span className="ml-1 font-normal text-gray-400">선택 · 최대 {MAX_IMAGES}장, 한 장당 10MB 이하</span>
+                                이미지 첨부 <span className="text-red-500">*</span>
+                                <span className="ml-2 font-normal text-gray-400">
+                                    최소 {MIN_IMAGES}장 · 최대 {MAX_IMAGES}장, 한 장당 10MB 이하
+                                </span>
+                            </div>
+
+                            {/* 이미지 제출 가이드 */}
+                            <div className="mb-4 rounded-[3px] bg-season-sand p-5">
+                                <p className="text-sm font-semibold text-season-ink">
+                                    아래 항목이 고루 담긴 사진을 <span className="text-season-accent">최소 {MIN_IMAGES}장 이상</span> 첨부해 주세요.
+                                </p>
+                                <dl className="mt-4 space-y-2.5 text-sm">
+                                    {IMAGE_GUIDE.map((guide) => (
+                                        <div key={guide.title} className="grid gap-0.5 sm:grid-cols-[9.5rem_1fr] sm:gap-4">
+                                            <dt className="font-semibold text-season-ink">{guide.title}</dt>
+                                            <dd className="text-gray-600">{guide.text}</dd>
+                                        </div>
+                                    ))}
+                                </dl>
+                                <ul className="mt-4 list-disc space-y-1 border-t border-season-line pl-5 pt-4 text-sm text-gray-500">
+                                    <li>밝은 낮 시간에 조명을 켜고, 가로 방향으로 촬영한 사진을 권장합니다.</li>
+                                    <li>보정이 과하지 않은, 실제 모습과 가까운 사진으로 보내주세요.</li>
+                                </ul>
                             </div>
                             <div
                                 onDragOver={(e) => {
@@ -330,6 +378,9 @@ export default function StaySeasonApplyPage() {
                                     }}
                                 />
                             </div>
+                            <p className={`mt-2 text-sm ${images.length >= MIN_IMAGES ? 'text-gray-500' : 'text-season-accent'}`} aria-live="polite">
+                                현재 {images.length}장 첨부됨{images.length < MIN_IMAGES && ` · ${MIN_IMAGES - images.length}장 더 필요합니다`}
+                            </p>
                             {errors.images && <p className="ss-error">{errors.images}</p>}
 
                             {images.length > 0 && (
