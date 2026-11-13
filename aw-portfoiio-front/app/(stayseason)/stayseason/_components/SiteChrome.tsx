@@ -12,7 +12,7 @@ export function SiteHeader({ current }: { current: 'intro' | 'apply' }) {
             <div className="ss-container flex h-16 items-center justify-between">
                 <a href="/stayseason" className="block">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src="/stayseason/logo.png" alt="STAY SEASON" width={316} height={124} className="h-10 w-auto" />
+                    <img src="/stayseason/logo.png" alt="STAY SEASON" width={772} height={264} className="h-10 w-auto" />
                 </a>
                 <nav className="flex items-center gap-6 md:gap-10">
                     <a href="/stayseason" className={linkClass(current === 'intro')}>
@@ -32,7 +32,7 @@ export function SiteFooter() {
         <footer className="bg-season-stone">
             <div className="ss-container flex flex-col gap-4 py-10 md:flex-row md:items-center md:justify-between">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/stayseason/logo.png" alt="STAY SEASON" width={316} height={124} className="h-10 w-auto self-start md:self-auto" />
+                <img src="/stayseason/logo.png" alt="STAY SEASON" width={772} height={264} className="h-10 w-auto self-start md:self-auto" />
                 <div className="text-sm text-gray-600">
                     입점 문의{' '}
                     <a href={`tel:${SUPPORT_TEL}`} className="font-semibold text-season-ink">
