@@ -205,15 +205,20 @@ export default function StaySeasonApplyPage() {
                 <main className="flex-1">
                     <div className="ss-container max-w-2xl py-24 text-center md:py-32">
                         <p className="ss-eyebrow">Thank you</p>
-                        <h1 className="mt-5 text-3xl font-semibold md:text-4xl">입점 신청이 접수되었습니다</h1>
-                        <p className="mt-6 text-base leading-relaxed text-gray-600">
-                            제출하신 내용을 검토한 뒤, 입력하신 이메일({values.managerEmail.trim()})로 결과를 안내드리겠습니다.
+                        <h1 className="mt-5 text-3xl font-semibold leading-snug md:text-4xl">입점 신청이 접수되었습니다</h1>
+                        <p className="ss-body mt-6">
+                            <span className="ss-line">제출하신 내용을 검토한 뒤, </span>
+                            <span className="ss-line">아래 이메일로 결과를 안내드리겠습니다.</span>
                         </p>
+                        <p className="mt-3 break-all text-base font-semibold text-season-ink">{values.managerEmail.trim()}</p>
 
                         <div className="mt-10 border border-season-brown p-6 text-left md:p-8">
-                            <h2 className="text-base font-semibold">영상을 아직 보내지 않으셨다면</h2>
-                            <p className="mt-3 text-sm leading-relaxed text-gray-600">
-                                숙소 영상은 아래 주소로 메일에 첨부해 보내주세요. 메일 제목에 <b className="text-season-ink">스테이 이름</b>을 적어주시면 신청서와 함께 확인합니다.
+                            <h2 className="text-lg font-semibold leading-snug">영상을 아직 보내지 않으셨다면</h2>
+                            <p className="ss-small mt-3">
+                                <span className="ss-line">숙소 영상은 아래 주소로 메일에 첨부해 보내주세요. </span>
+                                <span className="ss-line">
+                                    메일 제목에 <b className="text-season-ink">스테이 이름</b>을 적어주시면 신청서와 함께 확인합니다.
+                                </span>
                             </p>
                             <a href={videoMailHref} className="mt-4 inline-block text-base font-semibold underline underline-offset-4">
                                 {SUPPORT_EMAIL}
@@ -238,9 +243,12 @@ export default function StaySeasonApplyPage() {
                 <div className="border-b border-season-line">
                     <div className="ss-container max-w-3xl py-14 md:py-20">
                         <p className="ss-eyebrow">Apply</p>
-                        <h1 className="mt-4 text-3xl font-semibold md:text-4xl">입점 신청</h1>
-                        <p className="mt-5 text-base leading-relaxed text-gray-600">아래 내용을 작성해 제출해 주세요. 검토 후 담당자 이메일로 결과를 안내드립니다.</p>
-                        <p className="mt-2 text-sm text-gray-400">
+                        <h1 className="mt-4 text-3xl font-semibold leading-snug md:text-4xl">입점 신청</h1>
+                        <p className="ss-body mt-5">
+                            <span className="ss-line">아래 내용을 작성해 제출해 주세요. </span>
+                            <span className="ss-line">검토 후 담당자 이메일로 결과를 안내드립니다.</span>
+                        </p>
+                        <p className="mt-4 text-sm leading-6 text-gray-500">
                             <span className="text-red-500">*</span> 표시는 필수 입력 항목입니다.
                         </p>
                     </div>
@@ -326,17 +334,17 @@ export default function StaySeasonApplyPage() {
                         <div id="field-images">
                             <div className="ss-label">
                                 이미지 첨부 <span className="text-red-500">*</span>
-                                <span className="ml-2 font-normal text-gray-400">
-                                    최소 {MIN_IMAGES}장 · 최대 {MAX_IMAGES}장, 한 장당 10MB 이하
+                                <span className="mt-1 block font-normal text-gray-500 sm:ml-2 sm:mt-0 sm:inline">
+                                    최소 {MIN_IMAGES}장 · 최대 {MAX_IMAGES}장 · 한 장당 10MB 이하
                                 </span>
                             </div>
 
                             {/* 이미지 제출 가이드 */}
-                            <div className="mb-4 rounded-[3px] bg-season-sand p-5">
-                                <p className="text-sm font-semibold text-season-ink">
+                            <div className="mb-4 rounded-[3px] bg-season-sand p-5 md:p-6">
+                                <p className="text-[15px] font-semibold leading-7 text-season-ink">
                                     아래 항목이 고루 담긴 사진을 <span className="text-season-accent">최소 {MIN_IMAGES}장 이상</span> 첨부해 주세요.
                                 </p>
-                                <dl className="mt-4 space-y-2.5 text-sm">
+                                <dl className="mt-4 space-y-3 text-[15px] leading-7">
                                     {IMAGE_GUIDE.map((guide) => (
                                         <div key={guide.title} className="grid gap-0.5 sm:grid-cols-[9.5rem_1fr] sm:gap-4">
                                             <dt className="font-semibold text-season-ink">{guide.title}</dt>
@@ -344,9 +352,9 @@ export default function StaySeasonApplyPage() {
                                         </div>
                                     ))}
                                 </dl>
-                                <ul className="mt-4 list-disc space-y-1 border-t border-season-line pl-5 pt-4 text-sm text-gray-500">
+                                <ul className="mt-5 list-disc space-y-1.5 border-t border-season-line pl-5 pt-5 text-sm leading-6 text-gray-500">
                                     <li>밝은 낮 시간에 조명을 켜고, 가로 방향으로 촬영한 사진을 권장합니다.</li>
-                                    <li>보정이 과하지 않은, 실제 모습과 가까운 사진으로 보내주세요.</li>
+                                    <li>보정이 과하지 않은, 실제 모습에 가까운 사진을 보내주세요.</li>
                                 </ul>
                             </div>
                             <div
@@ -362,7 +370,7 @@ export default function StaySeasonApplyPage() {
                                 }}
                                 className={`border border-dashed px-6 py-10 text-center transition-colors ${dragging ? 'border-season-brown bg-white' : 'border-season-line bg-white/60'}`}
                             >
-                                <p className="text-sm text-gray-600">이미지를 여기로 끌어다 놓거나</p>
+                                <p className="text-[15px] leading-7 text-gray-600">이미지를 여기로 끌어다 놓거나, 아래 버튼으로 선택해 주세요.</p>
                                 <button type="button" onClick={() => fileInputRef.current?.click()} className="mt-3 border border-season-brown px-5 py-2.5 text-sm font-semibold transition-colors hover:bg-season-brown hover:text-white">
                                     파일 선택
                                 </button>
@@ -379,7 +387,7 @@ export default function StaySeasonApplyPage() {
                                 />
                             </div>
                             <p className={`mt-2 text-sm ${images.length >= MIN_IMAGES ? 'text-gray-500' : 'text-season-accent'}`} aria-live="polite">
-                                현재 {images.length}장 첨부됨{images.length < MIN_IMAGES && ` · ${MIN_IMAGES - images.length}장 더 필요합니다`}
+                                현재 {images.length}장 첨부됨{images.length < MIN_IMAGES && ` · ${MIN_IMAGES - images.length}장 더 필요합니다.`}
                             </p>
                             {errors.images && <p className="ss-error">{errors.images}</p>}
 
@@ -398,36 +406,51 @@ export default function StaySeasonApplyPage() {
                             )}
                         </div>
 
-                        <div className="border border-season-brown p-6">
-                            <h3 className="text-base font-semibold">영상은 메일로 보내주세요</h3>
-                            <p className="mt-3 text-sm leading-relaxed text-gray-600">
-                                영상은 용량이 커서 이 페이지에서 받지 않습니다. 신청서 제출 후 아래 주소로 <b className="text-season-ink">메일에 첨부</b>해 보내주세요. 메일 제목에 스테이 이름을 적어주시면 신청서와 함께 확인합니다.
+                        <div className="border border-season-brown p-6 md:p-7">
+                            <h3 className="text-lg font-semibold leading-snug">영상은 메일로 보내주세요</h3>
+                            <p className="ss-small mt-3">
+                                <span className="ss-line">영상은 용량이 커서 이 페이지에서 받지 않습니다. </span>
+                                <span className="ss-line">
+                                    신청서를 제출한 뒤, 아래 주소로 <b className="text-season-ink">메일에 첨부</b>해 보내주세요.
+                                </span>
                             </p>
-                            <a href={videoMailHref} className="mt-3 inline-block text-base font-semibold underline underline-offset-4">
+                            <a href={videoMailHref} className="mt-4 inline-block text-lg font-semibold underline underline-offset-4">
                                 {SUPPORT_EMAIL}
                             </a>
-                            <ul className="mt-4 list-disc space-y-1 pl-5 text-sm text-gray-500">
+                            <ul className="mt-5 list-disc space-y-1.5 border-t border-season-line pl-5 pt-5 text-sm leading-6 text-gray-500">
+                                <li>메일 제목에 스테이 이름을 적어주시면 신청서와 함께 확인합니다.</li>
                                 <li>실내 조명을 모두 켜고, 모든 공간이 나오도록 촬영해 주세요.</li>
                                 <li>외관과 주변 환경, 실내 모습이 모두 드러나면 좋습니다.</li>
-                                <li>용량이 커서 첨부가 어려우면 클라우드 공유 링크를 메일로 보내주셔도 됩니다.</li>
+                                <li>용량이 커서 첨부가 어려우면 클라우드 공유 링크를 보내주셔도 됩니다.</li>
                             </ul>
                         </div>
                     </Section>
 
                     {/* 동의 */}
                     <div id="field-privacyAgreed" className="mt-14 border-t border-season-brown pt-8">
-                        <h2 className="text-base font-semibold">
+                        <h2 className="text-lg font-semibold leading-snug">
                             개인정보 수집 및 이용 동의 <span className="text-red-500">*</span>
                         </h2>
-                        <div className="mt-4 rounded-[3px] bg-season-sand p-5 text-sm leading-relaxed text-gray-600">
-                            <p>· 수집 항목: 담당자 정보(성함, 전화번호, 이메일), 스테이 정보, 사업자 등록 여부 및 업종, 첨부 자료</p>
-                            <p>· 수집 목적: 입점 가능 여부 검토 및 문의 대응</p>
-                            <p>· 보유 기간: 검토 완료 후 3개월간 보관 후 파기</p>
-                            <p className="mt-2 text-gray-500">동의를 거부하실 수 있으나, 거부 시 입점 신청이 접수되지 않습니다.</p>
+                        <div className="mt-4 rounded-[3px] bg-season-sand p-5 md:p-6">
+                            <dl className="space-y-3 text-[15px] leading-7">
+                                <div className="grid gap-0.5 sm:grid-cols-[5.5rem_1fr] sm:gap-4">
+                                    <dt className="font-semibold text-season-ink">수집 항목</dt>
+                                    <dd className="text-gray-600">담당자 정보(성함, 전화번호, 이메일), 스테이 정보, 사업자 등록 여부 및 업종, 첨부 자료</dd>
+                                </div>
+                                <div className="grid gap-0.5 sm:grid-cols-[5.5rem_1fr] sm:gap-4">
+                                    <dt className="font-semibold text-season-ink">수집 목적</dt>
+                                    <dd className="text-gray-600">입점 가능 여부 검토 및 문의 대응</dd>
+                                </div>
+                                <div className="grid gap-0.5 sm:grid-cols-[5.5rem_1fr] sm:gap-4">
+                                    <dt className="font-semibold text-season-ink">보유 기간</dt>
+                                    <dd className="text-gray-600">검토 완료 후 3개월간 보관한 뒤 파기</dd>
+                                </div>
+                            </dl>
+                            <p className="mt-5 border-t border-season-line pt-5 text-sm leading-6 text-gray-500">동의를 거부하실 수 있으나, 거부하시면 입점 신청이 접수되지 않습니다.</p>
                         </div>
-                        <label className="mt-4 flex cursor-pointer items-center gap-3">
+                        <label className="mt-5 flex cursor-pointer items-center gap-3">
                             <input type="checkbox" checked={values.privacyAgreed} onChange={(e) => setValue('privacyAgreed', e.target.checked)} className="h-5 w-5 accent-season-brown" />
-                            <span className="text-sm font-semibold">개인정보 수집 및 이용에 동의합니다.</span>
+                            <span className="text-[15px] font-semibold leading-6">개인정보 수집 및 이용에 동의합니다.</span>
                         </label>
                         {errors.privacyAgreed && <p className="ss-error">{errors.privacyAgreed}</p>}
                     </div>

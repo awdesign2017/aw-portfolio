@@ -52,7 +52,7 @@ public class HostApplicationPostRequest {
     @AssertTrue(message = "개인정보 수집 및 이용에 동의해주세요.")
     private boolean privacyAgreed;
 
-    // 첨부 이미지 (선택)
+    // 첨부 이미지 (최소 10장 — 개수 검증은 컨트롤러)
     private List<MultipartFile> images;
 
     // 자동 입력 봇 차단용 (사람에게는 보이지 않는 칸 — 값이 있으면 저장하지 않음)

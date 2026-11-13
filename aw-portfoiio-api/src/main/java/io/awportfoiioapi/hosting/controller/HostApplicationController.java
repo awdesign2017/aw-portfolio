@@ -26,7 +26,8 @@ import java.util.concurrent.ConcurrentHashMap;
 @RequestMapping("/api")
 public class HostApplicationController {
 
-    private static final int MAX_IMAGES = 10;
+    private static final int MIN_IMAGES = 10;
+    private static final int MAX_IMAGES = 30;
     private static final long MAX_IMAGE_SIZE = 10L * 1024 * 1024;
     private static final Set<String> IMAGE_EXTENSIONS = Set.of("jpg", "jpeg", "png", "webp", "gif");
     private static final Set<String> STATUSES = Set.of("NEW", "REVIEWING", "DONE");
@@ -113,7 +114,7 @@ public class HostApplicationController {
 
     private String validateImages(HostApplicationPostRequest request) {
         if (request.getImages() == null) {
-            return null;
+            return "이미지를 최소 " + MIN_IMAGES + "장 이상 첨부해주세요.";
         }
         int count = 0;
         for (MultipartFile file : request.getImages()) {
@@ -133,6 +134,9 @@ public class HostApplicationController {
             if (file.getSize() > MAX_IMAGE_SIZE) {
                 return "이미지는 한 장당 10MB 이하로 첨부해주세요.";
             }
+        }
+        if (count < MIN_IMAGES) {
+            return "이미지를 최소 " + MIN_IMAGES + "장 이상 첨부해주세요.";
         }
         if (count > MAX_IMAGES) {
             return "이미지는 최대 " + MAX_IMAGES + "장까지 첨부할 수 있습니다.";

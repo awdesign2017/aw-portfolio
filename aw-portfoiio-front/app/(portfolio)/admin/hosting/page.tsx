@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useRecoilValue } from 'recoil';
 import { userState } from '@/store/user';
@@ -9,6 +9,7 @@ import { HostingService } from '@/services/hosting.service';
 import { HostApplication, HostApplicationStatus } from '@/tpyes/hosting';
 
 //스테이시즌 입점 신청 목록 (관리자)
+//왼쪽: 신청 목록 / 오른쪽: 선택한 신청의 내용과 이미지를 한 화면에 표시
 
 const STATUS_LABEL: Record<HostApplicationStatus, string> = {
     NEW: '신규',
@@ -26,9 +27,9 @@ const EXPERIENCE_LABEL: Record<string, string> = { NONE: '경험 없음', HAS: '
 const REGISTERED_LABEL: Record<string, string> = { PREPARING: '준비 중', REGISTERED: '등록 완료' };
 
 const NEW_DAYS = 7;
-const TH = 'px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap';
 
 const formatDateTime = (value: string) => (value ? new Date(value).toLocaleString('ko-KR') : '-');
+const formatDate = (value: string) => (value ? new Date(value).toLocaleDateString('ko-KR') : '-');
 
 export default function AdminHostingPage() {
     const router = useRouter();
@@ -39,7 +40,12 @@ export default function AdminHostingPage() {
     const [applications, setApplications] = useState<HostApplication[]>([]);
     const [statusFilter, setStatusFilter] = useState<'all' | HostApplicationStatus>('all');
     const [keyword, setKeyword] = useState('');
-    const [detail, setDetail] = useState<HostApplication | null>(null);
+    //선택한 신청 (없으면 목록의 첫 번째를 보여줌)
+    const [selectedId, setSelectedId] = useState<number | null>(null);
+    //이미지 크게 보기 (보고 있는 이미지 순번)
+    const [viewerIndex, setViewerIndex] = useState<number | null>(null);
+
+    const detailRef = useRef<HTMLDivElement>(null);
 
     const fetchApplications = async () => {
         await request(
@@ -68,13 +74,49 @@ export default function AdminHostingPage() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [currentUser]);
 
+    const newSince = Date.now() - NEW_DAYS * 24 * 60 * 60 * 1000;
+    const isRecent = (application: HostApplication) => new Date(application.createdAt).getTime() >= newSince;
+
+    const search = keyword.trim().toLowerCase();
+    const filtered = applications
+        .filter((a) => statusFilter === 'all' || a.status === statusFilter)
+        .filter((a) => !search || [a.stayName, a.managerName, a.managerEmail, a.managerPhone].some((v) => (v ?? '').toLowerCase().includes(search)));
+    const isFiltered = statusFilter !== 'all' || !!search;
+
+    const detail = filtered.find((a) => a.id === selectedId) ?? filtered[0] ?? null;
+    const detailImages = detail?.images ?? [];
+
+    const selectApplication = (application: HostApplication) => {
+        setSelectedId(application.id);
+        setViewerIndex(null);
+        //좁은 화면에서는 목록 아래에 상세가 나오므로 그 위치로 이동
+        if (window.innerWidth < 1024) {
+            requestAnimationFrame(() => detailRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+        }
+    };
+
+    //이미지 크게 보기: ESC 닫기, 좌우 화살표 이동
+    useEffect(() => {
+        if (viewerIndex === null) return;
+
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') setViewerIndex(null);
+            if (event.key === 'ArrowRight') setViewerIndex((prev) => (prev === null ? prev : (prev + 1) % detailImages.length));
+            if (event.key === 'ArrowLeft') setViewerIndex((prev) => (prev === null ? prev : (prev - 1 + detailImages.length) % detailImages.length));
+        };
+        const prevOverflow = document.body.style.overflow;
+        document.addEventListener('keydown', handleKeyDown);
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.removeEventListener('keydown', handleKeyDown);
+            document.body.style.overflow = prevOverflow || '';
+        };
+    }, [viewerIndex, detailImages.length]);
+
     const changeStatus = async (application: HostApplication, status: HostApplicationStatus) => {
         await request(
             () => HostingService.putStatus(application.id, status),
-            () => {
-                setApplications((prev) => prev.map((a) => (a.id === application.id ? { ...a, status } : a)));
-                setDetail((prev) => (prev && prev.id === application.id ? { ...prev, status } : prev));
-            },
+            () => setApplications((prev) => prev.map((a) => (a.id === application.id ? { ...a, status } : a))),
             { ignoreErrorRedirect: true },
         ).catch(() => {});
     };
@@ -86,21 +128,12 @@ export default function AdminHostingPage() {
             () => HostingService.delete(application.id),
             () => {
                 alert('삭제되었습니다.');
-                setDetail(null);
+                setSelectedId(null);
                 fetchApplications();
             },
             { ignoreErrorRedirect: true },
         ).catch(() => {});
     };
-
-    const newSince = Date.now() - NEW_DAYS * 24 * 60 * 60 * 1000;
-    const isRecent = (application: HostApplication) => new Date(application.createdAt).getTime() >= newSince;
-
-    const search = keyword.trim().toLowerCase();
-    const filtered = applications
-        .filter((a) => statusFilter === 'all' || a.status === statusFilter)
-        .filter((a) => !search || [a.stayName, a.managerName, a.managerEmail, a.managerPhone].some((v) => (v ?? '').toLowerCase().includes(search)));
-    const isFiltered = statusFilter !== 'all' || !!search;
 
     const downloadExcel = async () => {
         //엑셀 라이브러리는 용량이 커서 버튼을 누를 때만 불러온다
@@ -108,10 +141,10 @@ export default function AdminHostingPage() {
         const rows = filtered.map((a) => ({
             신청일시: formatDateTime(a.createdAt),
             상태: STATUS_LABEL[a.status] ?? a.status,
-            '스테이 이름': a.stayName,
-            '스테이 주소': a.stayAddress,
+            '숙소 이름': a.stayName,
+            '숙소 주소': a.stayAddress,
             '웹사이트 및 SNS': a.website ?? '',
-            '스테이 소개': a.stayIntro,
+            '숙소 소개': a.stayIntro,
             '담당자 성함': a.managerName,
             '담당자 전화번호': a.managerPhone,
             '담당자 이메일': a.managerEmail,
@@ -159,7 +192,7 @@ export default function AdminHostingPage() {
                 <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-6">
                     <div>
                         <h2 className="text-2xl font-bold text-gray-900 tracking-tight">신청 목록</h2>
-                        <p className="text-sm text-gray-500 mt-1">/stayseason 페이지에서 접수된 입점 신청을 최신순으로 확인합니다</p>
+                        <p className="text-sm text-gray-500 mt-1">목록에서 신청을 선택하면 내용과 이미지를 바로 확인할 수 있습니다</p>
                     </div>
                     <div className="flex flex-wrap gap-2">
                         <button onClick={downloadExcel} disabled={filtered.length === 0} className="inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-white border border-gray-200 text-gray-700 text-sm font-semibold hover:border-gray-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
@@ -179,166 +212,207 @@ export default function AdminHostingPage() {
                     <Stat label="완료" value={applications.filter((a) => a.status === 'DONE').length} valueClass="text-emerald-600" />
                 </div>
 
-                {/* 필터 */}
-                <div className="flex flex-col sm:flex-row sm:flex-wrap sm:justify-end gap-2 mb-6">
-                    <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as 'all' | HostApplicationStatus)} className="px-3 py-2.5 rounded-xl border border-gray-200 bg-white text-sm">
-                        <option value="all">상태 전체</option>
-                        <option value="NEW">신규</option>
-                        <option value="REVIEWING">검토 중</option>
-                        <option value="DONE">완료</option>
-                    </select>
-                    <input type="search" value={keyword} onChange={(e) => setKeyword(e.target.value)} placeholder="스테이 이름, 담당자, 연락처 검색" className="sm:w-72 px-3 py-2.5 rounded-xl border border-gray-200 bg-white text-sm" />
-                    {isFiltered && (
-                        <button
-                            type="button"
-                            onClick={() => {
-                                setStatusFilter('all');
-                                setKeyword('');
-                            }}
-                            className="px-3 py-2.5 text-sm font-semibold text-gray-500 hover:text-gray-900 whitespace-nowrap"
-                        >
-                            초기화
-                        </button>
-                    )}
-                </div>
-
                 {applications.length === 0 ? (
                     <Empty title="접수된 입점 신청이 없습니다" description="신청이 들어오면 여기에 표시되고, 알림 메일이 발송됩니다" />
-                ) : filtered.length === 0 ? (
-                    <Empty title="조건에 맞는 신청이 없습니다" description="필터나 검색어를 바꿔보세요" />
                 ) : (
-                    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-                        <div className="px-6 py-3 border-b border-gray-100 text-sm text-gray-500">
-                            {isFiltered ? `검색 결과 ${filtered.length}건` : `전체 ${filtered.length}건`} · 최신순
+                    <div className="grid gap-6 lg:grid-cols-[360px_minmax(0,1fr)] lg:items-start">
+                        {/* 왼쪽: 목록 */}
+                        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden lg:sticky lg:top-6">
+                            <div className="p-4 border-b border-gray-100 space-y-2">
+                                <div className="flex gap-2">
+                                    <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as 'all' | HostApplicationStatus)} className="px-3 py-2.5 rounded-xl border border-gray-200 bg-white text-sm">
+                                        <option value="all">상태 전체</option>
+                                        <option value="NEW">신규</option>
+                                        <option value="REVIEWING">검토 중</option>
+                                        <option value="DONE">완료</option>
+                                    </select>
+                                    <input type="search" value={keyword} onChange={(e) => setKeyword(e.target.value)} placeholder="숙소, 담당자, 연락처 검색" className="min-w-0 flex-1 px-3 py-2.5 rounded-xl border border-gray-200 bg-white text-sm" />
+                                </div>
+                                <div className="flex items-center justify-between text-sm text-gray-500">
+                                    <span>{isFiltered ? `검색 결과 ${filtered.length}건` : `전체 ${filtered.length}건`} · 최신순</span>
+                                    {isFiltered && (
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setStatusFilter('all');
+                                                setKeyword('');
+                                            }}
+                                            className="font-semibold text-gray-500 hover:text-gray-900"
+                                        >
+                                            초기화
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+
+                            {filtered.length === 0 ? (
+                                <p className="px-4 py-10 text-center text-sm text-gray-400">조건에 맞는 신청이 없습니다.</p>
+                            ) : (
+                                <ul className="divide-y divide-gray-100 lg:max-h-[calc(100vh-13rem)] lg:overflow-y-auto">
+                                    {filtered.map((application) => {
+                                        const selected = detail?.id === application.id;
+                                        const thumbnail = application.images?.[0]?.url;
+                                        return (
+                                            <li key={application.id}>
+                                                <button type="button" onClick={() => selectApplication(application)} aria-current={selected ? 'true' : undefined} className={`flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors ${selected ? 'bg-gray-900 text-white' : 'hover:bg-gray-50'}`}>
+                                                    <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-gray-100">{thumbnail && <img src={thumbnail} alt="" className="h-full w-full object-cover" loading="lazy" />}</div>
+                                                    <div className="min-w-0 flex-1">
+                                                        <div className="flex items-center gap-1.5">
+                                                            <span className="truncate text-sm font-semibold">{application.stayName}</span>
+                                                            {isRecent(application) && <span className="shrink-0 px-1.5 py-0.5 rounded bg-red-500 text-white text-[10px] font-bold leading-none">NEW</span>}
+                                                        </div>
+                                                        <div className={`mt-0.5 truncate text-xs ${selected ? 'text-gray-300' : 'text-gray-500'}`}>
+                                                            {application.managerName} · {formatDate(application.createdAt)}
+                                                        </div>
+                                                    </div>
+                                                    <span className={`shrink-0 px-2 py-1 rounded-full text-[11px] font-semibold ${STATUS_CLASS[application.status] ?? 'bg-gray-100 text-gray-600'}`}>{STATUS_LABEL[application.status] ?? application.status}</span>
+                                                </button>
+                                            </li>
+                                        );
+                                    })}
+                                </ul>
+                            )}
                         </div>
-                        <div className="overflow-x-auto">
-                            <table className="w-full">
-                                <thead className="bg-gray-50">
-                                    <tr>
-                                        <th className={TH}>스테이 이름</th>
-                                        <th className={TH}>담당자</th>
-                                        <th className={TH}>연락처</th>
-                                        <th className={TH}>상태</th>
-                                        <th className={TH}>신청일시</th>
-                                        <th className={`${TH} text-right`}>작업</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-100">
-                                    {filtered.map((application) => (
-                                        <tr key={application.id} className="hover:bg-gray-50 transition-colors">
-                                            <td className="px-6 py-4 text-sm font-semibold text-gray-900">
-                                                <div className="flex items-center gap-2">
-                                                    {application.stayName}
-                                                    {isRecent(application) && <span className="px-1.5 py-0.5 rounded bg-red-500 text-white text-[10px] font-bold leading-none">NEW</span>}
-                                                </div>
-                                                <div className="mt-0.5 text-xs font-normal text-gray-400">{application.stayAddress}</div>
-                                            </td>
-                                            <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">{application.managerName}</td>
-                                            <td className="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
-                                                <div>{application.managerPhone}</div>
-                                                <div className="text-xs text-gray-400">{application.managerEmail}</div>
-                                            </td>
-                                            <td className="px-6 py-4 text-sm whitespace-nowrap">
-                                                <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${STATUS_CLASS[application.status] ?? 'bg-gray-100 text-gray-600'}`}>{STATUS_LABEL[application.status] ?? application.status}</span>
-                                            </td>
-                                            <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">{formatDateTime(application.createdAt)}</td>
-                                            <td className="px-6 py-4 text-sm">
-                                                <div className="flex flex-col md:flex-row md:justify-end gap-2 md:gap-4">
-                                                    <button onClick={() => setDetail(application)} className="text-sm font-semibold text-gray-600 hover:text-gray-900 transition-colors whitespace-nowrap text-left">
-                                                        상세보기
-                                                    </button>
-                                                    <button onClick={() => deleteApplication(application)} className="text-sm font-semibold text-red-500 hover:text-red-700 transition-colors whitespace-nowrap text-left">
-                                                        삭제
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+
+                        {/* 오른쪽: 선택한 신청 상세 */}
+                        <div ref={detailRef} className="scroll-mt-4">
+                            {!detail ? (
+                                <Empty title="조건에 맞는 신청이 없습니다" description="필터나 검색어를 바꿔보세요" />
+                            ) : (
+                                <article className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                                    {/* 제목 */}
+                                    <div className="px-6 py-6 border-b border-gray-100 md:px-8">
+                                        <div className="flex flex-wrap items-start justify-between gap-4">
+                                            <div className="min-w-0">
+                                                <h3 className="text-2xl font-bold tracking-tight text-gray-900 break-words">{detail.stayName}</h3>
+                                                <p className="mt-1.5 text-sm text-gray-500 break-words">{detail.stayAddress}</p>
+                                                <p className="mt-1 text-sm text-gray-400">{formatDateTime(detail.createdAt)} 신청</p>
+                                            </div>
+                                            <button onClick={() => deleteApplication(detail)} className="shrink-0 px-3 py-2 rounded-xl text-sm font-semibold text-red-500 hover:bg-red-50 transition-colors">
+                                                삭제
+                                            </button>
+                                        </div>
+                                        <div className="mt-5 flex flex-wrap items-center gap-2">
+                                            <span className="mr-1 text-sm font-semibold text-gray-500">처리 상태</span>
+                                            {(Object.keys(STATUS_LABEL) as HostApplicationStatus[]).map((status) => (
+                                                <button
+                                                    key={status}
+                                                    type="button"
+                                                    aria-pressed={detail.status === status}
+                                                    onClick={() => detail.status !== status && changeStatus(detail, status)}
+                                                    className={`px-3.5 py-1.5 rounded-full text-sm font-semibold transition-colors ${detail.status === status ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
+                                                >
+                                                    {STATUS_LABEL[status]}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* 신청 내용 */}
+                                    <div className="grid gap-px bg-gray-100 md:grid-cols-2">
+                                        <Block title="담당자 정보">
+                                            <Row label="성함">{detail.managerName}</Row>
+                                            <Row label="전화번호">
+                                                <a href={`tel:${detail.managerPhone}`} className="underline underline-offset-2">
+                                                    {detail.managerPhone}
+                                                </a>
+                                            </Row>
+                                            <Row label="이메일">
+                                                <a href={`mailto:${detail.managerEmail}`} className="underline underline-offset-2">
+                                                    {detail.managerEmail}
+                                                </a>
+                                            </Row>
+                                            <Row label="숙박업 경험">{EXPERIENCE_LABEL[detail.experience] ?? detail.experience}</Row>
+                                        </Block>
+                                        <Block title="사업자 · 숙소 정보">
+                                            <Row label="사업자 등록">{REGISTERED_LABEL[detail.businessRegistered] ?? detail.businessRegistered}</Row>
+                                            <Row label="업종">{detail.businessType}</Row>
+                                            <Row label="웹사이트·SNS">{detail.website || '-'}</Row>
+                                        </Block>
+                                    </div>
+
+                                    <div className="px-6 py-6 border-t border-gray-100 md:px-8">
+                                        <h4 className="text-sm font-semibold text-gray-500">숙소 소개</h4>
+                                        <p className="mt-3 whitespace-pre-line break-words text-[15px] leading-7 text-gray-800">{detail.stayIntro}</p>
+                                    </div>
+
+                                    {/* 이미지 */}
+                                    <div className="px-6 py-6 border-t border-gray-100 md:px-8">
+                                        <div className="flex items-baseline justify-between gap-4">
+                                            <h4 className="text-sm font-semibold text-gray-500">
+                                                첨부 이미지 <span className="text-gray-900">{detailImages.length}장</span>
+                                            </h4>
+                                            {detailImages.length > 0 && <span className="text-xs text-gray-400">이미지를 누르면 크게 볼 수 있습니다</span>}
+                                        </div>
+                                        {detailImages.length > 0 ? (
+                                            <ul className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-4">
+                                                {detailImages.map((image, index) => (
+                                                    <li key={image.url}>
+                                                        <button type="button" onClick={() => setViewerIndex(index)} aria-label={`${index + 1}번째 이미지 크게 보기`} className="group block aspect-[4/3] w-full overflow-hidden rounded-lg bg-gray-100">
+                                                            <img src={image.url} alt={image.name} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" loading="lazy" />
+                                                        </button>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        ) : (
+                                            <p className="mt-3 text-sm text-gray-400">첨부된 이미지가 없습니다.</p>
+                                        )}
+                                        <p className="mt-5 text-xs text-gray-400">영상은 신청자가 support@stay-season.com 으로 따로 보내도록 안내되어 있습니다.</p>
+                                    </div>
+                                </article>
+                            )}
                         </div>
                     </div>
                 )}
             </div>
 
-            {/* 상세 */}
-            {detail && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setDetail(null)}>
-                    <div role="dialog" aria-modal="true" aria-label={`${detail.stayName} 입점 신청 상세`} className="flex max-h-[90vh] w-full max-w-2xl flex-col rounded-2xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-6 py-5">
-                            <div>
-                                <h3 className="text-lg font-bold text-gray-900">{detail.stayName}</h3>
-                                <p className="mt-0.5 text-sm text-gray-400">{formatDateTime(detail.createdAt)} 신청</p>
-                            </div>
-                            <button onClick={() => setDetail(null)} aria-label="닫기" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-100 text-lg font-bold text-gray-600 hover:bg-gray-200">
+            {/* 이미지 크게 보기 */}
+            {detail && viewerIndex !== null && detailImages[viewerIndex] && (
+                <div role="dialog" aria-modal="true" aria-label={`${detail.stayName} 첨부 이미지`} className="fixed inset-0 z-50 flex flex-col bg-black/90" onClick={() => setViewerIndex(null)}>
+                    <div className="flex items-center justify-between gap-4 px-4 py-3 text-white" onClick={(e) => e.stopPropagation()}>
+                        <div className="min-w-0 text-sm">
+                            <span className="font-semibold">
+                                {viewerIndex + 1} / {detailImages.length}
+                            </span>
+                            <span className="ml-3 text-gray-400 break-all">{detailImages[viewerIndex].name}</span>
+                        </div>
+                        <div className="flex shrink-0 items-center gap-2">
+                            <a href={detailImages[viewerIndex].url} target="_blank" rel="noreferrer" className="px-3 py-2 rounded-lg bg-white/10 text-sm font-semibold hover:bg-white/20 transition-colors">
+                                원본 열기
+                            </a>
+                            <button onClick={() => setViewerIndex(null)} aria-label="닫기" className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-xl font-bold hover:bg-white/20 transition-colors">
                                 ×
                             </button>
                         </div>
-
-                        <div className="overflow-y-auto px-6 py-5">
-                            <div className="mb-5 flex flex-wrap items-center gap-2">
-                                <span className="mr-1 text-sm font-semibold text-gray-500">처리 상태</span>
-                                {(Object.keys(STATUS_LABEL) as HostApplicationStatus[]).map((status) => (
-                                    <button
-                                        key={status}
-                                        type="button"
-                                        onClick={() => detail.status !== status && changeStatus(detail, status)}
-                                        className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${detail.status === status ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
-                                    >
-                                        {STATUS_LABEL[status]}
-                                    </button>
-                                ))}
-                            </div>
-
-                            <dl className="divide-y divide-gray-100 text-sm">
-                                <Row label="담당자 성함">{detail.managerName}</Row>
-                                <Row label="담당자 전화번호">
-                                    <a href={`tel:${detail.managerPhone}`} className="underline underline-offset-2">
-                                        {detail.managerPhone}
-                                    </a>
-                                </Row>
-                                <Row label="담당자 이메일">
-                                    <a href={`mailto:${detail.managerEmail}`} className="underline underline-offset-2">
-                                        {detail.managerEmail}
-                                    </a>
-                                </Row>
-                                <Row label="숙박업 경험">{EXPERIENCE_LABEL[detail.experience] ?? detail.experience}</Row>
-                                <Row label="스테이 주소">{detail.stayAddress}</Row>
-                                <Row label="웹사이트 및 SNS">{detail.website || '-'}</Row>
-                                <Row label="스테이 소개">
-                                    <span className="whitespace-pre-line">{detail.stayIntro}</span>
-                                </Row>
-                                <Row label="사업자 등록 여부">{REGISTERED_LABEL[detail.businessRegistered] ?? detail.businessRegistered}</Row>
-                                <Row label="업종">{detail.businessType}</Row>
-                            </dl>
-
-                            <div className="mt-5">
-                                <div className="text-sm font-semibold text-gray-500">첨부 이미지 {detail.images?.length ?? 0}장</div>
-                                {detail.images && detail.images.length > 0 ? (
-                                    <ul className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4">
-                                        {detail.images.map((image) => (
-                                            <li key={image.url}>
-                                                <a href={image.url} target="_blank" rel="noreferrer" title={image.name} className="block aspect-square overflow-hidden rounded-lg bg-gray-100">
-                                                    <img src={image.url} alt={image.name} className="h-full w-full object-cover" loading="lazy" />
-                                                </a>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                ) : (
-                                    <p className="mt-2 text-sm text-gray-400">첨부된 이미지가 없습니다.</p>
-                                )}
-                                <p className="mt-4 text-xs text-gray-400">영상은 신청자가 support@stay-season.com 으로 따로 보내도록 안내되어 있습니다.</p>
-                            </div>
-                        </div>
-
-                        <div className="flex justify-between gap-2 border-t border-gray-100 px-6 py-4">
-                            <button onClick={() => deleteApplication(detail)} className="px-4 py-2.5 rounded-xl text-sm font-semibold text-red-500 hover:bg-red-50 transition-colors">
-                                삭제
-                            </button>
-                            <button onClick={() => setDetail(null)} className="px-4 py-2.5 rounded-xl bg-gray-900 text-white text-sm font-semibold hover:bg-gray-700 transition-colors">
-                                닫기
-                            </button>
-                        </div>
+                    </div>
+                    <div className="relative flex min-h-0 flex-1 items-center justify-center px-4 pb-6">
+                        <img src={detailImages[viewerIndex].url} alt={detailImages[viewerIndex].name} className="max-h-full max-w-full object-contain" onClick={(e) => e.stopPropagation()} />
+                        {detailImages.length > 1 && (
+                            <>
+                                <button
+                                    type="button"
+                                    aria-label="이전 이미지"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setViewerIndex((viewerIndex - 1 + detailImages.length) % detailImages.length);
+                                    }}
+                                    className="absolute left-3 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/15 text-2xl text-white hover:bg-white/30 transition-colors"
+                                >
+                                    ‹
+                                </button>
+                                <button
+                                    type="button"
+                                    aria-label="다음 이미지"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setViewerIndex((viewerIndex + 1) % detailImages.length);
+                                    }}
+                                    className="absolute right-3 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/15 text-2xl text-white hover:bg-white/30 transition-colors"
+                                >
+                                    ›
+                                </button>
+                            </>
+                        )}
                     </div>
                 </div>
             )}
@@ -367,11 +441,21 @@ function Empty({ title, description }: { title: string; description: string }) {
     );
 }
 
+//상세 화면의 정보 묶음 (담당자 정보 등)
+function Block({ title, children }: { title: string; children: React.ReactNode }) {
+    return (
+        <div className="bg-white px-6 py-6 md:px-8">
+            <h4 className="text-sm font-semibold text-gray-500">{title}</h4>
+            <dl className="mt-3 space-y-2.5 text-[15px]">{children}</dl>
+        </div>
+    );
+}
+
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
     return (
-        <div className="grid grid-cols-[7.5rem_1fr] gap-4 py-3">
-            <dt className="font-semibold text-gray-500">{label}</dt>
-            <dd className="min-w-0 break-words text-gray-900">{children}</dd>
+        <div className="grid grid-cols-[6.5rem_1fr] gap-3">
+            <dt className="text-gray-500">{label}</dt>
+            <dd className="min-w-0 break-words font-medium text-gray-900">{children}</dd>
         </div>
     );
 }

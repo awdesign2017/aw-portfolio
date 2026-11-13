@@ -18,7 +18,34 @@ body {
     word-break: keep-all;
 }
 
+/* 줄바꿈: 제목은 줄 길이를 고르게, 본문은 마지막 줄에 한 단어만 남지 않게 */
+h1,
+h2,
+h3 {
+    text-wrap: balance;
+}
+
+p,
+li,
+dd {
+    text-wrap: pretty;
+}
+
 @layer components {
+    /* 본문 문단: 넓은 화면에서는 .ss-line 단위(문장)로 줄을 나누고, 좁은 화면에서는 자연스럽게 이어 붙임 */
+    .ss-body {
+        @apply text-base leading-8 text-gray-600 md:text-[17px] md:leading-9;
+    }
+
+    .ss-line {
+        @apply md:block;
+    }
+
+    /* 카드·안내 상자 안의 작은 본문 */
+    .ss-small {
+        @apply text-[15px] leading-7 text-gray-600;
+    }
+
     /* 영문 표기용 */
     .ss-en {
         font-family: 'Jost', 'Pretendard Variable', 'Pretendard', 'Malgun Gothic', sans-serif;
