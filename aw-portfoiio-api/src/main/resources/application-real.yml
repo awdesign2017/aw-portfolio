@@ -1,4 +1,7 @@
 spring:
+  # 입점 신청 알림 메일 계정 파일 (GitHub Actions 배포 시 Secrets 로 생성됨, 없어도 정상 기동)
+  config:
+    import: optional:file:/home/awdesign/aw-portfolio-mail.properties
   jpa:
     hibernate:
       ddl-auto: none

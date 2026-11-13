@@ -75,6 +75,12 @@ jobs:
     steps:
       - name: SSH → 백엔드 재배포
         uses: appleboy/ssh-action@v1.0.3
+        # 입점 신청 알림 메일 계정 (선택). Secrets 에 MAIL_USERNAME / MAIL_PASSWORD 가 있으면
+        # 서버의 /home/awdesign/aw-portfolio-mail.properties 로 써 넣는다 (application-real.yml 이 읽음).
+        # 없거나 쓰기에 실패해도 배포는 그대로 진행한다.
+        env:
+          MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
+          MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
@@ -82,7 +88,9 @@ jobs:
           port: 22
           command_timeout: 15m
           script_stop: true
+          envs: MAIL_USERNAME,MAIL_PASSWORD
           script: |
+            if [ -n "$MAIL_USERNAME" ] && [ -n "$MAIL_PASSWORD" ]; then (umask 077; printf 'spring.mail.host=smtp.gmail.com\nspring.mail.port=587\nspring.mail.username=%s\nspring.mail.password=%s\n' "$MAIL_USERNAME" "$(printf %s "$MAIL_PASSWORD" | tr -d ' ')" > /home/awdesign/aw-portfolio-mail.properties) && echo "메일 설정 파일 갱신" || echo "메일 설정 파일 쓰기 실패 (배포는 계속)"; else echo "MAIL secrets 없음 - 메일 설정 건너뜀"; fi
             bash /home/awdesign/repo/aw-portfolio/deploy/deploy-backend.sh
 
   deploy-frontend:
