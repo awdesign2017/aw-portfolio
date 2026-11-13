@@ -10,8 +10,9 @@ export function SiteHeader({ current }: { current: 'intro' | 'apply' }) {
     return (
         <header className="sticky top-0 z-40 border-b border-season-line bg-season-beige/95 backdrop-blur">
             <div className="ss-container flex h-16 items-center justify-between">
-                <a href="/stayseason" className="ss-en text-lg font-medium tracking-[0.18em] text-season-brown">
-                    STAY SEASON
+                <a href="/stayseason" className="block">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src="/stayseason/logo.png" alt="STAY SEASON" width={316} height={124} className="h-10 w-auto" />
                 </a>
                 <nav className="flex items-center gap-6 md:gap-10">
                     <a href="/stayseason" className={linkClass(current === 'intro')}>
@@ -30,7 +31,8 @@ export function SiteFooter() {
     return (
         <footer className="bg-season-stone">
             <div className="ss-container flex flex-col gap-4 py-10 md:flex-row md:items-center md:justify-between">
-                <div className="ss-en text-base font-medium tracking-[0.18em] text-season-brown">STAY SEASON</div>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/stayseason/logo.png" alt="STAY SEASON" width={316} height={124} className="h-10 w-auto self-start md:self-auto" />
                 <div className="text-sm text-gray-600">
                     입점 문의{' '}
                     <a href={`tel:${SUPPORT_TEL}`} className="font-semibold text-season-ink">
