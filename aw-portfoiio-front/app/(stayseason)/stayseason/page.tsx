@@ -35,22 +35,25 @@ export default function StaySeasonIntroPage() {
             <SiteHeader current="intro" />
 
             {/* 히어로: 소개 영상 (소리 없이 자동 반복 재생) */}
-            <section className="relative flex h-[calc(100svh-4rem)] max-h-[1080px] min-h-[520px] items-end overflow-hidden bg-season-brown text-white">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/stayseason/hero-poster.jpg" alt="" className="absolute inset-0 h-full w-full object-cover" />
-                {/* 화면 움직임 줄이기를 켠 사용자에게는 영상 대신 위 정지 이미지만 보입니다 */}
-                <video className="absolute inset-0 h-full w-full object-cover motion-reduce:hidden" src="/stayseason/hero.mp4" poster="/stayseason/hero-poster.jpg" autoPlay muted loop playsInline preload="metadata" aria-hidden="true" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/30 to-black/10" />
+            {/* 모바일: 영상을 가리지 않도록 영상 아래에 문구를 둠 / PC: 영상 위에 문구를 겹침 */}
+            <section className="relative overflow-hidden bg-season-brown text-white md:flex md:h-[calc(100svh-4rem)] md:max-h-[1080px] md:min-h-[520px] md:items-end">
+                <div className="relative aspect-[4/3] md:static md:aspect-auto">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src="/stayseason/hero-poster.jpg" alt="" className="absolute inset-0 h-full w-full object-cover" />
+                    {/* 화면 움직임 줄이기를 켠 사용자에게는 영상 대신 위 정지 이미지만 보입니다 */}
+                    <video className="absolute inset-0 h-full w-full object-cover motion-reduce:hidden" src="/stayseason/hero.mp4" poster="/stayseason/hero-poster.jpg" autoPlay muted loop playsInline preload="metadata" aria-hidden="true" />
+                    <div className="absolute inset-0 hidden bg-gradient-to-t from-black/75 via-black/30 to-black/10 md:block" />
+                </div>
 
-                <div className="ss-container relative pb-14 md:pb-20">
+                <div className="ss-container relative py-10 md:pb-20 md:pt-0">
                     <p className="ss-en text-xs font-medium uppercase tracking-[0.25em] text-white/80">Stay in the season</p>
-                    <h1 className="mt-5 text-[28px] font-semibold leading-[1.4] md:text-5xl md:leading-[1.3]">
+                    <h1 className="mt-4 text-2xl font-semibold leading-[1.45] md:mt-5 md:text-5xl md:leading-[1.3]">
                         당신의 공간이 하나의 브랜드가 되도록,
                         <br />
                         스테이시즌이 새로운 감성의 문을 열어갑니다.
                     </h1>
-                    <p className="mt-6 max-w-xl text-base leading-8 text-white/85 md:text-lg">수수료 경쟁은 그만, 이제는 브랜드 가치의 시대입니다.</p>
-                    <a href="/stayseason/apply" className="ss-btn ss-btn-light mt-8">
+                    <p className="mt-4 max-w-xl text-[15px] leading-7 text-white/85 md:mt-6 md:text-lg md:leading-8">수수료 경쟁은 그만, 이제는 브랜드 가치의 시대입니다.</p>
+                    <a href="/stayseason/apply" className="ss-btn ss-btn-light mt-7 w-full md:mt-8 md:w-auto">
                         입점 신청
                     </a>
                 </div>
