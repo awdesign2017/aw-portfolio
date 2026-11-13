@@ -2,6 +2,7 @@
 //페이지 이동은 일반 링크(<a>)를 사용: 기초자료 영역과 레이아웃이 달라 어차피 전체 새로고침으로 이동한다.
 
 export const SUPPORT_EMAIL = 'support@stay-season.com';
+export const SUPPORT_TEL = '1522-5453';
 
 export function SiteHeader({ current }: { current: 'intro' | 'apply' }) {
     const linkClass = (active: boolean) => `text-sm transition-colors ${active ? 'font-semibold text-season-ink' : 'font-medium text-gray-500 hover:text-season-ink'}`;
@@ -32,6 +33,10 @@ export function SiteFooter() {
                 <div className="ss-en text-base font-medium tracking-[0.18em] text-season-brown">STAY SEASON</div>
                 <div className="text-sm text-gray-600">
                     입점 문의{' '}
+                    <a href={`tel:${SUPPORT_TEL}`} className="font-semibold text-season-ink">
+                        {SUPPORT_TEL}
+                    </a>
+                    {' · '}
                     <a href={`mailto:${SUPPORT_EMAIL}`} className="font-semibold text-season-ink underline underline-offset-4">
                         {SUPPORT_EMAIL}
                     </a>
