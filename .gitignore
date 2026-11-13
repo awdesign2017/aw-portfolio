@@ -57,3 +57,6 @@ prisma/*.db-journal
 *.sql.gz
 *.pem
 *.key
+
+# 원본 영상은 저장소에 올리지 않음 (GitHub 100MB 제한) — 웹용 압축본은 public/stayseason/hero.mp4
+/aw-portfoiio-front/app/**/*.mp4

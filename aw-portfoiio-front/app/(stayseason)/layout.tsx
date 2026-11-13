@@ -14,6 +14,14 @@ export const metadata: Metadata = {
 export default function StaySeasonLayout({ children }: { children: React.ReactNode }) {
     return (
         <html lang="ko">
+            <head>
+                {/* stay-season.com 과 같은 폰트: Pretendard(본문) + Jost(영문) */}
+                <link rel="preconnect" href="https://cdn.jsdelivr.net" crossOrigin="anonymous" />
+                <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
+                <link rel="preconnect" href="https://fonts.googleapis.com" />
+                <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+                <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600&display=swap" />
+            </head>
             <body>{children}</body>
         </html>
     );

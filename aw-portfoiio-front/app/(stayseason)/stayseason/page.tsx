@@ -24,31 +24,37 @@ const STEPS = [
 
 export default function StaySeasonIntroPage() {
     return (
-        <div className="min-h-screen bg-white">
+        <div className="min-h-screen bg-season-beige">
             <SiteHeader current="intro" />
 
-            {/* 히어로 */}
-            <section className="bg-gray-900 text-white">
-                <div className="ss-container py-24 md:py-40">
-                    <p className="ss-eyebrow text-gray-400">Are you a host?</p>
-                    <h1 className="mt-6 text-3xl font-bold leading-snug md:text-5xl md:leading-tight">
+            {/* 히어로: 소개 영상 (소리 없이 자동 반복 재생) */}
+            <section className="relative flex h-[calc(100svh-4rem)] max-h-[1080px] min-h-[520px] items-end overflow-hidden bg-season-brown text-white">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/stayseason/hero-poster.jpg" alt="" className="absolute inset-0 h-full w-full object-cover" />
+                {/* 화면 움직임 줄이기를 켠 사용자에게는 영상 대신 위 정지 이미지만 보입니다 */}
+                <video className="absolute inset-0 h-full w-full object-cover motion-reduce:hidden" src="/stayseason/hero.mp4" poster="/stayseason/hero-poster.jpg" autoPlay muted loop playsInline preload="metadata" aria-hidden="true" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/30 to-black/10" />
+
+                <div className="ss-container relative pb-14 md:pb-20">
+                    <p className="ss-en text-xs font-medium uppercase tracking-[0.25em] text-white/80">Are you a host?</p>
+                    <h1 className="mt-5 text-3xl font-semibold leading-snug md:text-5xl md:leading-tight">
                         머무는 계절이 특별해지는 곳,
                         <br />
                         스테이시즌과 함께할 호스트를 찾습니다.
                     </h1>
-                    <p className="mt-6 max-w-xl text-base leading-relaxed text-gray-300 md:text-lg">공간에 담긴 이야기를 가장 잘 어울리는 계절에 소개합니다. 입점 안내를 확인하고 신청해 주세요.</p>
-                    <a href="/stayseason/apply" className="ss-btn ss-btn-light mt-10">
+                    <p className="mt-5 max-w-xl text-base leading-relaxed text-white/85 md:text-lg">공간에 담긴 이야기를 가장 잘 어울리는 계절에 소개합니다. 입점 안내를 확인하고 신청해 주세요.</p>
+                    <a href="/stayseason/apply" className="ss-btn ss-btn-light mt-8">
                         입점 신청
                     </a>
                 </div>
             </section>
 
             {/* 소개 */}
-            <section className="border-b border-gray-200">
+            <section className="border-b border-season-line">
                 <div className="ss-container grid gap-8 py-20 md:grid-cols-[1fr_2fr] md:gap-16 md:py-28">
                     <div>
                         <p className="ss-eyebrow">About</p>
-                        <h2 className="mt-4 text-2xl font-bold md:text-3xl">스테이시즌 큐레이션</h2>
+                        <h2 className="mt-4 text-2xl font-semibold md:text-3xl">스테이시즌 큐레이션</h2>
                     </div>
                     <div className="space-y-5 text-base leading-loose text-gray-600 md:text-lg">
                         <p>스테이시즌은 숙소의 수보다 한 곳 한 곳의 경험을 중요하게 생각합니다. 그래서 모든 숙소를 직접 살펴보고, 기준에 맞는 곳만 소개합니다.</p>
@@ -58,15 +64,15 @@ export default function StaySeasonIntroPage() {
             </section>
 
             {/* 선정 기준 */}
-            <section className="border-b border-gray-200">
+            <section className="border-b border-season-line">
                 <div className="ss-container py-20 md:py-28">
                     <p className="ss-eyebrow">Criteria</p>
-                    <h2 className="mt-4 text-2xl font-bold md:text-3xl">네 가지 관점으로 살펴봅니다</h2>
-                    <div className="mt-12 grid gap-px bg-gray-200 sm:grid-cols-2 lg:grid-cols-4">
+                    <h2 className="mt-4 text-2xl font-semibold md:text-3xl">네 가지 관점으로 살펴봅니다</h2>
+                    <div className="mt-12 grid gap-px bg-season-line sm:grid-cols-2 lg:grid-cols-4">
                         {CRITERIA.map((item) => (
-                            <div key={item.no} className="bg-white p-8">
-                                <div className="text-sm font-semibold text-gray-400">{item.no}</div>
-                                <h3 className="mt-6 text-xl font-bold">{item.title}</h3>
+                            <div key={item.no} className="bg-season-beige p-8">
+                                <div className="ss-en text-sm font-medium text-season-accent">{item.no}</div>
+                                <h3 className="mt-6 text-xl font-semibold">{item.title}</h3>
                                 <p className="mt-3 text-sm leading-relaxed text-gray-600">{item.description}</p>
                             </div>
                         ))}
@@ -75,14 +81,14 @@ export default function StaySeasonIntroPage() {
             </section>
 
             {/* 호스트 서비스 */}
-            <section className="border-b border-gray-200 bg-gray-50">
+            <section className="border-b border-season-line bg-season-sand">
                 <div className="ss-container py-20 md:py-28">
                     <p className="ss-eyebrow">Service</p>
-                    <h2 className="mt-4 text-2xl font-bold md:text-3xl">호스트 서비스</h2>
+                    <h2 className="mt-4 text-2xl font-semibold md:text-3xl">호스트 서비스</h2>
                     <div className="mt-12 grid gap-10 md:grid-cols-3">
                         {SERVICES.map((item) => (
-                            <div key={item.title} className="border-t-2 border-gray-900 pt-6">
-                                <h3 className="text-lg font-bold">{item.title}</h3>
+                            <div key={item.title} className="border-t-2 border-season-brown pt-6">
+                                <h3 className="text-lg font-semibold">{item.title}</h3>
                                 <p className="mt-3 text-sm leading-relaxed text-gray-600">{item.description}</p>
                             </div>
                         ))}
@@ -91,15 +97,15 @@ export default function StaySeasonIntroPage() {
             </section>
 
             {/* 절차 안내 */}
-            <section className="border-b border-gray-200">
+            <section className="border-b border-season-line">
                 <div className="ss-container py-20 md:py-28">
                     <p className="ss-eyebrow">Process</p>
-                    <h2 className="mt-4 text-2xl font-bold md:text-3xl">입점 절차</h2>
+                    <h2 className="mt-4 text-2xl font-semibold md:text-3xl">입점 절차</h2>
                     <ol className="mt-12 grid gap-10 md:grid-cols-3">
                         {STEPS.map((step) => (
                             <li key={step.no}>
-                                <div className="text-xs font-semibold tracking-[0.2em] text-gray-400">{step.no}</div>
-                                <h3 className="mt-3 text-xl font-bold">{step.title}</h3>
+                                <div className="ss-en text-xs font-medium tracking-[0.2em] text-season-accent">{step.no}</div>
+                                <h3 className="mt-3 text-xl font-semibold">{step.title}</h3>
                                 <p className="mt-3 text-sm leading-relaxed text-gray-600">{step.description}</p>
                             </li>
                         ))}
@@ -108,10 +114,10 @@ export default function StaySeasonIntroPage() {
             </section>
 
             {/* 신청 안내 */}
-            <section className="bg-gray-900 text-white">
+            <section className="bg-season-brown text-white">
                 <div className="ss-container flex flex-col items-start gap-8 py-20 md:flex-row md:items-center md:justify-between md:py-24">
                     <div>
-                        <h2 className="text-2xl font-bold md:text-3xl">스테이시즌 입점을 신청하세요</h2>
+                        <h2 className="text-2xl font-semibold md:text-3xl">스테이시즌 입점을 신청하세요</h2>
                         <p className="mt-4 text-sm leading-relaxed text-gray-300 md:text-base">
                             궁금한 점은{' '}
                             <a href={`mailto:${SUPPORT_EMAIL}`} className="font-semibold text-white underline underline-offset-4">

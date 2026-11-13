@@ -6,6 +6,16 @@ module.exports = {
             colors: {
                 primary: '#000000',
                 secondary: '#ffffff',
+                // 스테이시즌 영역 전용 (stay-season.com 기준)
+                season: {
+                    brown: '#433C37',
+                    ink: '#212121',
+                    beige: '#EFEEE9',
+                    sand: '#E5E3DE',
+                    stone: '#D9D4D0',
+                    line: '#D2D2D2',
+                    accent: '#C8835E',
+                },
                 gray: {
                     50: '#fafafa',
                     100: '#f5f5f5',

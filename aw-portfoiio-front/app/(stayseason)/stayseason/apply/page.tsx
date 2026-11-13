@@ -174,22 +174,22 @@ export default function StaySeasonApplyPage() {
     //제출 완료 화면
     if (submitted) {
         return (
-            <div className="flex min-h-screen flex-col bg-white">
+            <div className="flex min-h-screen flex-col bg-season-beige">
                 <SiteHeader current="apply" />
                 <main className="flex-1">
                     <div className="ss-container max-w-2xl py-24 text-center md:py-32">
                         <p className="ss-eyebrow">Thank you</p>
-                        <h1 className="mt-5 text-3xl font-bold md:text-4xl">입점 신청이 접수되었습니다</h1>
+                        <h1 className="mt-5 text-3xl font-semibold md:text-4xl">입점 신청이 접수되었습니다</h1>
                         <p className="mt-6 text-base leading-relaxed text-gray-600">
                             제출하신 내용을 검토한 뒤, 입력하신 이메일({values.managerEmail.trim()})로 결과를 안내드리겠습니다.
                         </p>
 
-                        <div className="mt-10 border border-gray-900 p-6 text-left md:p-8">
-                            <h2 className="text-base font-bold">영상을 아직 보내지 않으셨다면</h2>
+                        <div className="mt-10 border border-season-brown p-6 text-left md:p-8">
+                            <h2 className="text-base font-semibold">영상을 아직 보내지 않으셨다면</h2>
                             <p className="mt-3 text-sm leading-relaxed text-gray-600">
-                                숙소 영상은 아래 주소로 메일에 첨부해 보내주세요. 메일 제목에 <b className="text-gray-900">스테이 이름</b>을 적어주시면 신청서와 함께 확인합니다.
+                                숙소 영상은 아래 주소로 메일에 첨부해 보내주세요. 메일 제목에 <b className="text-season-ink">스테이 이름</b>을 적어주시면 신청서와 함께 확인합니다.
                             </p>
-                            <a href={videoMailHref} className="mt-4 inline-block text-base font-bold underline underline-offset-4">
+                            <a href={videoMailHref} className="mt-4 inline-block text-base font-semibold underline underline-offset-4">
                                 {SUPPORT_EMAIL}
                             </a>
                         </div>
@@ -205,14 +205,14 @@ export default function StaySeasonApplyPage() {
     }
 
     return (
-        <div className="min-h-screen bg-white">
+        <div className="min-h-screen bg-season-beige">
             <SiteHeader current="apply" />
 
             <main>
-                <div className="border-b border-gray-200">
+                <div className="border-b border-season-line">
                     <div className="ss-container max-w-3xl py-14 md:py-20">
                         <p className="ss-eyebrow">Apply</p>
-                        <h1 className="mt-4 text-3xl font-bold md:text-4xl">입점 신청</h1>
+                        <h1 className="mt-4 text-3xl font-semibold md:text-4xl">입점 신청</h1>
                         <p className="mt-5 text-base leading-relaxed text-gray-600">아래 내용을 작성해 제출해 주세요. 검토 후 담당자 이메일로 결과를 안내드립니다.</p>
                         <p className="mt-2 text-sm text-gray-400">
                             <span className="text-red-500">*</span> 표시는 필수 입력 항목입니다.
@@ -287,7 +287,7 @@ export default function StaySeasonApplyPage() {
                             <select id="businessType" value={values.businessType} onChange={(e) => setValue('businessType', e.target.value)} className={`${inputClass('businessType')} ${values.businessType ? '' : 'text-gray-400'}`}>
                                 <option value="">업종을 선택해주세요</option>
                                 {BUSINESS_TYPES.map((type) => (
-                                    <option key={type} value={type} className="text-gray-900">
+                                    <option key={type} value={type} className="text-season-ink">
                                         {type}
                                     </option>
                                 ))}
@@ -312,10 +312,10 @@ export default function StaySeasonApplyPage() {
                                     setDragging(false);
                                     addImages(e.dataTransfer.files);
                                 }}
-                                className={`border border-dashed px-6 py-10 text-center transition-colors ${dragging ? 'border-gray-900 bg-gray-50' : 'border-gray-300'}`}
+                                className={`border border-dashed px-6 py-10 text-center transition-colors ${dragging ? 'border-season-brown bg-white' : 'border-season-line bg-white/60'}`}
                             >
                                 <p className="text-sm text-gray-600">이미지를 여기로 끌어다 놓거나</p>
-                                <button type="button" onClick={() => fileInputRef.current?.click()} className="mt-3 border border-gray-900 px-5 py-2.5 text-sm font-semibold transition-colors hover:bg-gray-900 hover:text-white">
+                                <button type="button" onClick={() => fileInputRef.current?.click()} className="mt-3 border border-season-brown px-5 py-2.5 text-sm font-semibold transition-colors hover:bg-season-brown hover:text-white">
                                     파일 선택
                                 </button>
                                 <input
@@ -335,7 +335,7 @@ export default function StaySeasonApplyPage() {
                             {images.length > 0 && (
                                 <ul className="mt-4 grid grid-cols-3 gap-3 sm:grid-cols-5">
                                     {images.map((file, index) => (
-                                        <li key={`${file.name}-${index}`} className="relative aspect-square overflow-hidden bg-gray-100">
+                                        <li key={`${file.name}-${index}`} className="relative aspect-square overflow-hidden rounded-[3px] bg-season-sand">
                                             {/* eslint-disable-next-line @next/next/no-img-element */}
                                             <img src={previews[index]} alt={file.name} className="h-full w-full object-cover" />
                                             <button type="button" onClick={() => removeImage(index)} aria-label={`${file.name} 삭제`} className="absolute right-1 top-1 flex h-7 w-7 items-center justify-center bg-black/70 text-sm text-white hover:bg-black">
@@ -347,12 +347,12 @@ export default function StaySeasonApplyPage() {
                             )}
                         </div>
 
-                        <div className="border border-gray-900 p-6">
-                            <h3 className="text-base font-bold">영상은 메일로 보내주세요</h3>
+                        <div className="border border-season-brown p-6">
+                            <h3 className="text-base font-semibold">영상은 메일로 보내주세요</h3>
                             <p className="mt-3 text-sm leading-relaxed text-gray-600">
-                                영상은 용량이 커서 이 페이지에서 받지 않습니다. 신청서 제출 후 아래 주소로 <b className="text-gray-900">메일에 첨부</b>해 보내주세요. 메일 제목에 스테이 이름을 적어주시면 신청서와 함께 확인합니다.
+                                영상은 용량이 커서 이 페이지에서 받지 않습니다. 신청서 제출 후 아래 주소로 <b className="text-season-ink">메일에 첨부</b>해 보내주세요. 메일 제목에 스테이 이름을 적어주시면 신청서와 함께 확인합니다.
                             </p>
-                            <a href={videoMailHref} className="mt-3 inline-block text-base font-bold underline underline-offset-4">
+                            <a href={videoMailHref} className="mt-3 inline-block text-base font-semibold underline underline-offset-4">
                                 {SUPPORT_EMAIL}
                             </a>
                             <ul className="mt-4 list-disc space-y-1 pl-5 text-sm text-gray-500">
@@ -364,18 +364,18 @@ export default function StaySeasonApplyPage() {
                     </Section>
 
                     {/* 동의 */}
-                    <div id="field-privacyAgreed" className="mt-14 border-t border-gray-900 pt-8">
-                        <h2 className="text-base font-bold">
+                    <div id="field-privacyAgreed" className="mt-14 border-t border-season-brown pt-8">
+                        <h2 className="text-base font-semibold">
                             개인정보 수집 및 이용 동의 <span className="text-red-500">*</span>
                         </h2>
-                        <div className="mt-4 bg-gray-50 p-5 text-sm leading-relaxed text-gray-600">
+                        <div className="mt-4 rounded-[3px] bg-season-sand p-5 text-sm leading-relaxed text-gray-600">
                             <p>· 수집 항목: 담당자 정보(성함, 전화번호, 이메일), 스테이 정보, 사업자 등록 여부 및 업종, 첨부 자료</p>
                             <p>· 수집 목적: 입점 가능 여부 검토 및 문의 대응</p>
                             <p>· 보유 기간: 검토 완료 후 3개월간 보관 후 파기</p>
                             <p className="mt-2 text-gray-500">동의를 거부하실 수 있으나, 거부 시 입점 신청이 접수되지 않습니다.</p>
                         </div>
                         <label className="mt-4 flex cursor-pointer items-center gap-3">
-                            <input type="checkbox" checked={values.privacyAgreed} onChange={(e) => setValue('privacyAgreed', e.target.checked)} className="h-5 w-5 accent-gray-900" />
+                            <input type="checkbox" checked={values.privacyAgreed} onChange={(e) => setValue('privacyAgreed', e.target.checked)} className="h-5 w-5 accent-season-brown" />
                             <span className="text-sm font-semibold">개인정보 수집 및 이용에 동의합니다.</span>
                         </label>
                         {errors.privacyAgreed && <p className="ss-error">{errors.privacyAgreed}</p>}
@@ -401,9 +401,9 @@ export default function StaySeasonApplyPage() {
 function Section({ no, title, children }: { no: string; title: string; children: React.ReactNode }) {
     return (
         <section className="mt-14">
-            <div className="flex items-baseline gap-3 border-b border-gray-900 pb-4">
-                <span className="text-sm font-semibold text-gray-400">{no}</span>
-                <h2 className="text-xl font-bold">{title}</h2>
+            <div className="flex items-baseline gap-3 border-b border-season-brown pb-4">
+                <span className="ss-en text-sm font-medium text-season-accent">{no}</span>
+                <h2 className="text-xl font-semibold">{title}</h2>
             </div>
             <div className="mt-8 space-y-7">{children}</div>
         </section>
@@ -441,7 +441,7 @@ function Choice({ name, value, onChange, options }: { name: string; value: strin
             {options.map((option) => {
                 const selected = value === option.value;
                 return (
-                    <label key={option.value} className={`cursor-pointer border px-4 py-3 text-center text-sm font-semibold transition-colors focus-within:ring-2 focus-within:ring-gray-900 focus-within:ring-offset-2 ${selected ? 'border-gray-900 bg-gray-900 text-white' : 'border-gray-300 text-gray-600 hover:border-gray-900'}`}>
+                    <label key={option.value} className={`cursor-pointer border px-4 py-3 text-center text-sm font-semibold transition-colors focus-within:ring-2 focus-within:ring-season-brown focus-within:ring-offset-2 ${selected ? 'border-season-brown bg-season-brown text-white' : 'border-season-line bg-white text-gray-600 hover:border-season-brown'}`}>
                         <input type="radio" name={name} value={option.value} checked={selected} onChange={() => onChange(option.value)} className="sr-only" />
                         {option.label}
                     </label>
